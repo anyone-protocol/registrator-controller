@@ -1,9 +1,9 @@
-Operator Registry Controller
+Registrator Controller
 
 ## Description
 
-Dedicated oracle-ish service to provide ANYONE Protocol Relay Operator AO
-Process (Smart Contract) with Relay Operator info (i.e. identity linking)
+Dedicated oracle-ish service to provide ANYONE Protocol Operator Registry AO
+Process (Smart Contract) with Registration Credits from EVM locks
 
 ## Project setup
 
