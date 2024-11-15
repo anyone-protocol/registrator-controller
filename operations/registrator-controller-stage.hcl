@@ -4,7 +4,15 @@ job "registrator-controller-stage" {
 
   group "registrator-controller-stage-group" {
     
-    count = 1
+    count = 3
+
+    update {
+      stagger      = "30s"
+      max_parallel = 1
+      canary       = 1
+      auto_revert  = true
+      auto_promote = true
+    }
 
     network {
       mode = "bridge"
@@ -30,17 +38,21 @@ job "registrator-controller-stage" {
 
       template {
         data = <<EOH
-        DISTRIBUTION_CONTRACT_TXID="[[ consulKey "smart-contracts/stage/distribution-address" ]]"
-        FACILITY_CONTRACT_ADDRESS="[[ consulKey "facilitator/sepolia/stage/address" ]]"
+        OPERATOR_REGISTRY_PROCESS_ID="[[ consulKey "TODO" ]]"
+        REGISTRATOR_CONTRACT_ADDRESS="[[ consulKey "registrator/sepolia/stage/address" ]]"
         {{with secret "kv/valid-ator/stage"}}
-          FACILITY_OPERATOR_KEY="{{.Data.data.FACILITY_OPERATOR_KEY}}"
-          DRE_HOSTNAME="{{.Data.data.DRE_HOSTNAME}}"
+          OPERATOR_REGISTRY_CONTROLLER_KEY="{{.Data.data.OPERATOR_REGISTRY_CONTROLLER_KEY}}"
+          REGISTRATOR_OPERATOR_KEY="{{.Data.data.REGISTRATOR_OPERATOR_KEY}}"
           EVM_NETWORK="{{.Data.data.INFURA_NETWORK}}"
           EVM_PRIMARY_WSS="{{.Data.data.INFURA_WS_URL}}"
           EVM_SECONDARY_WSS="{{.Data.data.ALCHEMY_WS_URL}}"
         {{end}}
         {{- range service "validator-stage-mongo" }}
           MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/registrator-controller-stage"
+        {{- end }}
+        {{- range service "registrator-controller-stage-redis" }}
+          REDIS_HOSTNAME="{{ .Address }}"
+          REDIS_PORT="{{ .Port }}"
         {{- end }}
         EOH
         destination = "secrets/file.env"
@@ -53,9 +65,7 @@ job "registrator-controller-stage" {
         VERSION="[[.commit_sha]]"
         CPU_COUNT="1"
         DO_CLEAN="false"
-        REDIS_HOSTNAME="localhost"
-        REDIS_PORT="${NOMAD_PORT_redis}"
-        FACILITY_CONTRACT_DEPLOYED_BLOCK="5674945"
+        REGISTRATOR_CONTRACT_DEPLOYED_BLOCK="6204399"
         IS_LOCAL_LEADER="true"
       }
       
@@ -80,6 +90,17 @@ job "registrator-controller-stage" {
             grace = "15s"
           }
         }
+      }
+    }
+  }
+
+  group "registrator-controller-stage-redis-group" {
+    count = 1
+
+    network {
+      mode = "bridge"
+      port "redis" {
+        host_network = "wireguard"
       }
     }
 
