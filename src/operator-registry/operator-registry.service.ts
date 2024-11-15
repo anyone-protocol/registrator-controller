@@ -8,6 +8,7 @@ import {
 } from '../util/send-aos-message'
 import { createEthereumDataItemSigner } from '../util/create-ethereum-data-item-signer'
 import { EthereumSigner } from '../util/arbundles-lite'
+import { OperatorRegistryState } from './interfaces/operator-registry'
 
 @Injectable()
 export class OperatorRegistryService implements OnApplicationBootstrap {
@@ -48,55 +49,22 @@ export class OperatorRegistryService implements OnApplicationBootstrap {
     )
   }
 
-  public async getOperatorRegistryState(): Promise<{
-    RegistrationCreditsFingerprintsToOperatorAddresses: {
-      [fingerprint: string]: string
+  public async getOperatorRegistryState(): Promise<OperatorRegistryState> {
+    const { result } = await sendAosDryRun({
+      processId: this.operatorRegistryProcessId,
+      tags: [{ name: 'Action', value: 'View-State' }]
+    })
+    const state = JSON.parse(result.Messages[0].Data)
+
+    for (const prop in state) {
+      // NB: Lua returns empty tables as JSON arrays, so we normalize them to
+      //     empty objects as when they are populated they will also be objects
+      if (Array.isArray(state[prop]) && state[prop].length < 1) {
+        state[prop] = {}
+      }
     }
-    VerifiedFingerprintsToOperatorAddresses: { [fingerprint: string]: string }
-    VerifiedHardwareFingerprints: { [fingerprint: string]: boolean }
-  }> {
-    const operatorRegistryState = {
-      RegistrationCreditsFingerprintsToOperatorAddresses: {},
-      VerifiedFingerprintsToOperatorAddresses: {},
-      VerifiedHardwareFingerprints: {}
-    }
 
-    const { result: registrationCreditsResult } = await sendAosDryRun({
-      processId: this.operatorRegistryProcessId,
-      tags: [{ name: 'Action', value: 'List-Registration-Credits' }]
-    })
-    const parsedRegistrationCredits = JSON.parse(
-      registrationCreditsResult.Messages[0].Data
-    )
-    operatorRegistryState.RegistrationCreditsFingerprintsToOperatorAddresses =
-      Array.isArray(parsedRegistrationCredits) ? {} : parsedRegistrationCredits
-
-    const { result: verifiedFingerprintsResult } = await sendAosDryRun({
-      processId: this.operatorRegistryProcessId,
-      tags: [{ name: 'Action', value: 'List-Fingerprint-Certificates' }]
-    })
-    const parsedVerifiedFingerprints = JSON.parse(
-      verifiedFingerprintsResult.Messages[0].Data
-    )
-    operatorRegistryState.VerifiedFingerprintsToOperatorAddresses =
-      Array.isArray(parsedVerifiedFingerprints)
-        ? {}
-        : parsedVerifiedFingerprints
-
-    const { result: verifiedHardwareResult } = await sendAosDryRun({
-      processId: this.operatorRegistryProcessId,
-      tags: [{ name: 'Action', value: 'List-Verified-Hardware' }]
-    })
-    const parsedVerifiedHardware = JSON.parse(
-      verifiedHardwareResult.Messages[0].Data
-    )
-    operatorRegistryState.VerifiedHardwareFingerprints = Array.isArray(
-      parsedVerifiedHardware
-    )
-      ? {}
-      : parsedVerifiedHardware
-
-    return operatorRegistryState
+    return state
   }
 
   public async addRegistrationCredit(
