@@ -38,7 +38,7 @@ job "registrator-controller-stage" {
 
       template {
         data = <<EOH
-        OPERATOR_REGISTRY_PROCESS_ID="[[ consulKey "TODO" ]]"
+        OPERATOR_REGISTRY_PROCESS_ID="[[ consulKey "smart-contracts/stage/operator-registry-address" ]]"
         REGISTRATOR_CONTRACT_ADDRESS="[[ consulKey "registrator/sepolia/stage/address" ]]"
         {{with secret "kv/valid-ator/stage"}}
           OPERATOR_REGISTRY_CONTROLLER_KEY="{{.Data.data.OPERATOR_REGISTRY_CONTROLLER_KEY}}"
@@ -61,7 +61,7 @@ job "registrator-controller-stage" {
 
       env {
         BUMP="1"
-        IS_LIVE="false"
+        IS_LIVE="true"
         VERSION="[[.commit_sha]]"
         CPU_COUNT="1"
         DO_CLEAN="false"

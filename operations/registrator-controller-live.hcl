@@ -38,7 +38,7 @@ job "registrator-controller-live" {
 
       template {
         data = <<EOH
-        OPERATOR_REGISTRY_PROCESS_ID="[[ consulKey "TODO" ]]"
+        OPERATOR_REGISTRY_PROCESS_ID="[[ consulKey "smart-contracts/live/operator-registry-address" ]]"
         REGISTRATOR_CONTRACT_ADDRESS="[[ consulKey "registrator/sepolia/live/address" ]]"
         {{with secret "kv/valid-ator/live"}}
           OPERATOR_REGISTRY_CONTROLLER_KEY="{{.Data.data.OPERATOR_REGISTRY_CONTROLLER_KEY}}"
