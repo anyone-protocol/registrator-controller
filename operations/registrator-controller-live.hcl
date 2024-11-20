@@ -41,7 +41,7 @@ job "registrator-controller-live" {
         OPERATOR_REGISTRY_PROCESS_ID="[[ consulKey "smart-contracts/live/operator-registry-address" ]]"
         REGISTRATOR_CONTRACT_ADDRESS="[[ consulKey "registrator/sepolia/live/address" ]]"
         {{with secret "kv/valid-ator/live"}}
-          OPERATOR_REGISTRY_CONTROLLER_KEY="{{.Data.data.OPERATOR_REGISTRY_CONTROLLER_KEY}}"
+          OPERATOR_REGISTRY_CONTROLLER_KEY="{{.Data.data.RELAY_REGISTRY_OPERATOR_KEY}}"
           REGISTRATOR_OPERATOR_KEY="{{.Data.data.REGISTRATOR_OPERATOR_KEY}}"
           EVM_NETWORK="{{.Data.data.INFURA_NETWORK}}"
           EVM_PRIMARY_WSS="{{.Data.data.INFURA_WS_URL}}"
