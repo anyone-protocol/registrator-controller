@@ -1,5 +1,6 @@
 import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { Wallet } from 'ethers'
 
 import {
   AosSigningFunction,
@@ -47,6 +48,9 @@ export class OperatorRegistryService implements OnApplicationBootstrap {
     this.signer = await createEthereumDataItemSigner(
       new EthereumSigner(this.operatorRegistryControllerKey)
     )
+    const wallet = new Wallet(this.operatorRegistryControllerKey)
+    const address = await wallet.getAddress()
+    this.logger.log(`Bootstrapped with signer address ${address}`)
   }
 
   public async getOperatorRegistryState(): Promise<OperatorRegistryState> {
