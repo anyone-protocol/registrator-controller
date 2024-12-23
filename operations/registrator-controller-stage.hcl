@@ -60,7 +60,7 @@ job "registrator-controller-stage" {
       }
 
       env {
-        BUMP="1"
+        BUMP="ACL"
         IS_LIVE="true"
         VERSION="[[.commit_sha]]"
         CPU_COUNT="1"
