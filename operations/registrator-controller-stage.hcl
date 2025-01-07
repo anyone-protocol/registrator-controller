@@ -60,7 +60,7 @@ job "registrator-controller-stage" {
       }
 
       env {
-        BUMP="ACL"
+        BUMP="acl-redeploy-2"
         IS_LIVE="true"
         VERSION="[[.commit_sha]]"
         CPU_COUNT="1"
