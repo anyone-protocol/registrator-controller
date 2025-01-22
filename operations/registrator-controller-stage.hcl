@@ -28,7 +28,7 @@ job "registrator-controller-stage" {
     task "registrator-controller-stage-service" {
       driver = "docker"
       config {
-        image = "ghcr.io/anyone-protocol/registrator-controller:[[.deploy]]"
+        image = "ghcr.io/anyone-protocol/registrator-controller:[[.commit_sha]]"
         force_pull = true
       }
 
@@ -60,7 +60,7 @@ job "registrator-controller-stage" {
       }
 
       env {
-        BUMP="1"
+        BUMP="redeploy-rewards-3"
         IS_LIVE="true"
         VERSION="[[.commit_sha]]"
         CPU_COUNT="1"

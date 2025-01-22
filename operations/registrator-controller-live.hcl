@@ -28,7 +28,7 @@ job "registrator-controller-live" {
     task "registrator-controller-live-service" {
       driver = "docker"
       config {
-        image = "ghcr.io/anyone-protocol/registrator-controller:[[.deploy]]"
+        image = "ghcr.io/anyone-protocol/registrator-controller:[[.commit_sha]]"
         force_pull = true
       }
 
