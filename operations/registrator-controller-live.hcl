@@ -46,6 +46,7 @@ job "registrator-controller-live" {
           EVM_NETWORK="{{.Data.data.INFURA_NETWORK}}"
           EVM_PRIMARY_WSS="{{.Data.data.INFURA_WS_URL}}"
           EVM_SECONDARY_WSS="{{.Data.data.ALCHEMY_WS_URL}}"
+          EVM_JSON_RPC="{{.Data.data.JSON_RPC}}"
         {{end}}
         {{- range service "validator-live-mongo" }}
           MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/registrator-controller-live"

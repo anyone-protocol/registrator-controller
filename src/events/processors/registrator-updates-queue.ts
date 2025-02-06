@@ -29,11 +29,11 @@ export class RegistratorUpdatesQueue extends WorkerHost {
             job.data as AddRegistrationCreditEventData
           if (data != undefined) {
             this.logger.log(
-              `Adding registration credit for ${data.address} seen at ${data.tx}`
+              `Adding registration credit for [${data.address}] from tx [${data.label}] for fingerprint [${data.fingerprint}]`
             )
             return await this.operatorRegistryService.addRegistrationCredit(
               data.address,
-              data.tx,
+              data.label,
               data.fingerprint
             )
           } else {

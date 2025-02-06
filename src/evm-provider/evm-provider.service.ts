@@ -12,7 +12,8 @@ import { createResilientProviders } from '../util/resilient-websocket-provider'
 const DefaultEvmProviderServiceConfig = {
   EVM_NETWORK: '',
   EVM_PRIMARY_WSS: '',
-  EVM_SECONDARY_WSS: ''
+  EVM_SECONDARY_WSS: '',
+  EVM_JSON_RPC: ''
 }
 const DESTROY_WEBSOCKET_INTERVAL = 5
 
@@ -30,6 +31,7 @@ export class EvmProviderService
   private currentWebSocketProvider!: ethers.WebSocketProvider
   private currentWebSocketName: 'primary (infura)' | 'secondary (alchemy)' =
     'primary (infura)'
+  private primaryJsonRpcProvider: ethers.JsonRpcProvider
 
   private providerSwapCallbacks: ((
     provider: ethers.WebSocketProvider
@@ -52,6 +54,13 @@ export class EvmProviderService
     if (!this.config.EVM_SECONDARY_WSS) {
       throw new Error('EVM_SECONDARY_WSS is not set!')
     }
+    this.config.EVM_JSON_RPC = config.get<string>('EVM_JSON_RPC', {
+      infer: true
+    })
+    if (!this.config.EVM_JSON_RPC) {
+      throw new Error('EVM_JSON_RPC is not set!')
+    }
+    this.primaryJsonRpcProvider = new ethers.JsonRpcProvider(this.config.EVM_JSON_RPC, this.config.EVM_NETWORK)
   }
 
   onApplicationShutdown() {
@@ -128,5 +137,9 @@ export class EvmProviderService
     this.providerSwapCallbacks.push(onSwapProvidersCallback)
 
     return this.currentWebSocketProvider
+  }
+
+  async getCurrentJsonRpcProvider() {
+    return this.primaryJsonRpcProvider
   }
 }

@@ -202,7 +202,7 @@ export class EventsService
 
   public async enqueueAddRegistrationCredit(
     address: string,
-    transactionHash: string,
+    label: string,
     fingerprint: string
   ) {
     // NB: To ensure the queue only contains unique event attempts
@@ -215,7 +215,7 @@ export class EventsService
       data: {
         address,
         fingerprint,
-        tx: transactionHash
+        label
       },
       opts: {
         ...EventsService.jobOpts,

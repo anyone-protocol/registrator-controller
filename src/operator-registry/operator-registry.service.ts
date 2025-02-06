@@ -73,7 +73,7 @@ export class OperatorRegistryService implements OnApplicationBootstrap {
 
   public async addRegistrationCredit(
     address: string,
-    transactionHash: string,
+    label: string,
     fingerprint: string
   ): Promise<boolean> {
     if (!this.signer) {
@@ -88,7 +88,7 @@ export class OperatorRegistryService implements OnApplicationBootstrap {
           { name: 'Action', value: 'Add-Registration-Credit' },
           { name: 'Address', value: address },
           { name: 'Fingerprint', value: fingerprint },
-          { name: 'EVM-TX', value: transactionHash }
+          { name: 'EVM-TX', value: label }
         ]
       })
 
@@ -104,13 +104,13 @@ export class OperatorRegistryService implements OnApplicationBootstrap {
 
       this.logger.warn(
         `Add-Registration-Credit resulted in an Error for ` +
-          ` [${JSON.stringify({ address, transactionHash, fingerprint })}]`,
+          ` [${JSON.stringify({ address, transactionHash: label, fingerprint })}]`,
         result.Error
       )
     } catch (error) {
       this.logger.error(
         `Exception when adding registration credit` +
-          ` [${JSON.stringify({ address, transactionHash, fingerprint })}]`,
+          ` [${JSON.stringify({ address, transactionHash: label, fingerprint })}]`,
         error.stack
       )
     }
