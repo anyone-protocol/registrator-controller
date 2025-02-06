@@ -7,6 +7,7 @@ import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { EventsModule } from './events/events.module'
 import { EvmProviderModule } from './evm-provider/evm-provider.module'
+import { HealingModule } from './healing/healing.module'
 
 @Module({
   imports: [
@@ -32,7 +33,8 @@ import { EvmProviderModule } from './evm-provider/evm-provider.module'
       })
     }),
     EvmProviderModule,
-    EventsModule
+    EventsModule,
+    HealingModule
   ],
   controllers: [AppController],
   providers: [AppService]

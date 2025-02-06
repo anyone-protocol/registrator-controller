@@ -30,10 +30,12 @@ export class HealingService implements OnApplicationBootstrap {
     private readonly config: ConfigService<{
       IS_LIVE: string
       DO_CLEAN: boolean
+      EVM_JSON_RPC: string
+      EVM_NETWORK: string
+      REGISTRATOR_CONTRACT_ADDRESS: string
     }>,
-    @InjectQueue('tasks-queue') public tasksQueue: Queue,
+    @InjectQueue('healing-queue') public healingQueue: Queue,
     private readonly eventsService: EventsService,
-    private readonly evmProviderService: EvmProviderService,
     private readonly operatorRegistryService: OperatorRegistryService
   ) {
     this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
@@ -70,14 +72,14 @@ export class HealingService implements OnApplicationBootstrap {
       this.logger.log('Skipped cleaning up old jobs')
     } else {
       this.logger.log('Cleaning up old (24hrs+) jobs')
-      await this.tasksQueue.clean(24 * 60 * 60 * 1000, -1)
+      await this.healingQueue.clean(24 * 60 * 60 * 1000, -1)
       // await this.validationQueue.clean(24 * 60 * 60 * 1000, -1)
       // await this.verificationQueue.clean(24 * 60 * 60 * 1000, -1)
     }
 
     if (this.isLive != 'true') {
       this.logger.log('Cleaning up queues for dev...')
-      await this.tasksQueue.obliterate({ force: true })
+      await this.healingQueue.obliterate({ force: true })
       // await this.validationQueue.obliterate({ force: true })
       // await this.verificationQueue.obliterate({ force: true })
     }
@@ -91,7 +93,7 @@ export class HealingService implements OnApplicationBootstrap {
   public async enqueueHealingLocksAndRegistrationCredits(
     delayJob: number = 1000 * 60 * 15 // every 15 minutes
   ) {
-    await this.tasksQueue.add(
+    await this.healingQueue.add(
       'heal-locks-and-registration-credits',
       {},
       {

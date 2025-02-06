@@ -49,6 +49,7 @@ import {
     EventsDiscoveryService,
     RegistratorUpdatesQueue,
     DiscoverRegistratorEventsQueue
-  ]
+  ],
+  exports: [EventsService]
 })
 export class EventsModule {}
