@@ -4,10 +4,11 @@ import { Queue } from 'bullmq'
 import { ConfigService } from '@nestjs/config'
 import { Contract, JsonRpcProvider } from 'ethers'
 
-import { registratorABI } from '../events/abi/registrator'
+import { fullRegistratorABI } from '../events/abi/registrator'
 import { EventsService } from '../events/events.service'
-import { EvmProviderService } from '../evm-provider/evm-provider.service'
-import { OperatorRegistryService } from '../operator-registry/operator-registry.service'
+import {
+  OperatorRegistryService
+} from '../operator-registry/operator-registry.service'
 
 @Injectable()
 export class HealingService implements OnApplicationBootstrap {
@@ -60,7 +61,7 @@ export class HealingService implements OnApplicationBootstrap {
     }
     this.registratorContract = new Contract(
       this.registratorAddress,
-      registratorABI,
+      fullRegistratorABI,
       new JsonRpcProvider(evmJsonRpcUrl, evmNetwork)
     )
   }
@@ -73,15 +74,11 @@ export class HealingService implements OnApplicationBootstrap {
     } else {
       this.logger.log('Cleaning up old (24hrs+) jobs')
       await this.healingQueue.clean(24 * 60 * 60 * 1000, -1)
-      // await this.validationQueue.clean(24 * 60 * 60 * 1000, -1)
-      // await this.verificationQueue.clean(24 * 60 * 60 * 1000, -1)
     }
 
     if (this.isLive != 'true') {
       this.logger.log('Cleaning up queues for dev...')
       await this.healingQueue.obliterate({ force: true })
-      // await this.validationQueue.obliterate({ force: true })
-      // await this.verificationQueue.obliterate({ force: true })
     }
 
     await this.enqueueHealingLocksAndRegistrationCredits(0)
