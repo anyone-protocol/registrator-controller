@@ -8,8 +8,8 @@ import { HealingService } from '../healing.service'
 export class HealingQueue extends WorkerHost {
   private readonly logger = new Logger(HealingQueue.name)
 
-  public static readonly JOB_HEALING_LOCKS_AND_REGISTRATION_CREDITS =
-    'healing-locks-and-registration-credits'
+  public static readonly JOB_HEAL_LOCKS_AND_REGISTRATION_CREDITS =
+    'heal-locks-and-registration-credits'
 
   constructor(
     @Inject(forwardRef(() => HealingService))
@@ -22,7 +22,7 @@ export class HealingQueue extends WorkerHost {
     this.logger.log(`Processing ${job.name} [${job.id}]`)
 
     switch (job.name) {
-      case HealingQueue.JOB_HEALING_LOCKS_AND_REGISTRATION_CREDITS:
+      case HealingQueue.JOB_HEAL_LOCKS_AND_REGISTRATION_CREDITS:
         try {
           await this.healingService.discoverLocksNeedingRegistrationCredits()
           await this.healingService.enqueueHealingLocksAndRegistrationCredits()
