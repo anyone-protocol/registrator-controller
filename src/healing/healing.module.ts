@@ -16,7 +16,7 @@ import { EventsModule } from '../events/events.module'
     }),
     BullModule.registerFlowProducer({ name: 'healing-flow' })
   ],
-  providers: [HealingService, HealingQueue],//, ValidationQueue, VerificationQueue],
+  providers: [HealingService, HealingQueue],
   exports: [HealingService]
 })
 export class HealingModule {}
