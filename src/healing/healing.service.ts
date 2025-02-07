@@ -90,13 +90,19 @@ export class HealingService implements OnApplicationBootstrap {
   public async enqueueHealingLocksAndRegistrationCredits(
     delayJob: number = 1000 * 60 * 15 // every 15 minutes
   ) {
+    const now = new Date();
+    const minutes = now.getMinutes();
+    const roundedMinutes = Math.floor(minutes / 15) * 15;
+    now.setMinutes(roundedMinutes, 0, 0);
+    const fifteenMinuteWindowFromCurrentTime = now.getTime();
     await this.healingQueue.add(
       'heal-locks-and-registration-credits',
       {},
       {
         delay: delayJob,
         removeOnComplete: HealingService.removeOnComplete,
-        removeOnFail: HealingService.removeOnFail
+        removeOnFail: HealingService.removeOnFail,
+        jobId: `heal-locks-and-registration-credits-${fifteenMinuteWindowFromCurrentTime}`
       }
     )
   }
@@ -118,6 +124,10 @@ export class HealingService implements OnApplicationBootstrap {
 
     // For each fingerprint without a registration credit, check for a matching lock, & enqueue adding a registration credit
     for (const fingerprint of fingerprintsWithoutRegistrationCredits) {
+      // NB: Don't spam JSON RPC endpoint too quickly :)
+      this.logger.log(`Sleeping for 1s before next read from Registrator Contract...`)
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
       const operatorAddress = ClaimableFingerprintsToOperatorAddresses[fingerprint]
       this.logger.log(`Checking operator [${operatorAddress}] for lock with fingerprint [${fingerprint}]`)
       const [
@@ -126,7 +136,7 @@ export class HealingService implements OnApplicationBootstrap {
       ] = await this.registratorContract.getRegistration(operatorAddress) as [bigint, [bigint, bigint, string, string][]]
 
       if (registrations.length === 0) {
-        this.logger.error(`No registration data found for operator [${operatorAddress}]`)
+        this.logger.log(`No registration data found for operator [${operatorAddress}]`)
         continue
       }
 
@@ -145,10 +155,6 @@ export class HealingService implements OnApplicationBootstrap {
       this.logger.log(`Operator [${operatorAddress}] has a lock for fingerprint [${fingerprint}]`)
       const label = `from-healing-queue-${Date.now()}`
       await this.eventsService.enqueueAddRegistrationCredit(operatorAddress, label, fingerprint)
-
-      // NB: Don't spam JSON RPC endpoint too quickly :)
-      this.logger.log(`Sleeping for 1s before next read from Registrator Contract...`)
-      await new Promise(resolve => setTimeout(resolve, 1000))
     }
   }
 }
