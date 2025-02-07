@@ -148,7 +148,7 @@ export class HealingService implements OnApplicationBootstrap {
       ]) => fingerprintFromContract)
 
       if (!fingerprintsWithLocks.includes(fingerprint)) {
-        this.logger.error(`Operator [${operatorAddress}] does not have a lock for fingerprint [${fingerprint}]`)
+        this.logger.log(`Operator [${operatorAddress}] does not have a lock for fingerprint [${fingerprint}]`)
         continue
       }
 
