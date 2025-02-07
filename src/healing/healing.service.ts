@@ -143,7 +143,8 @@ export class HealingService implements OnApplicationBootstrap {
       }
 
       this.logger.log(`Operator [${operatorAddress}] has a lock for fingerprint [${fingerprint}]`)
-      await this.eventsService.enqueueAddRegistrationCredit(operatorAddress, 'from-healing-queue', fingerprint)
+      const label = `from-healing-queue-${Date.now()}`
+      await this.eventsService.enqueueAddRegistrationCredit(operatorAddress, label, fingerprint)
 
       // NB: Don't spam JSON RPC endpoint too quickly :)
       this.logger.log(`Sleeping for 1s before next read from Registrator Contract...`)

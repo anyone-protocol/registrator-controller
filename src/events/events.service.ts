@@ -207,7 +207,7 @@ export class EventsService
   ) {
     // NB: To ensure the queue only contains unique event attempts
     //     the jobId is suffixed with the requesting address and fingerprint
-    const suffix = `${address}-${fingerprint}`
+    const suffix = `${address}-${fingerprint}-${label}`
 
     await this.registratorUpdatesFlow.add({
       name: 'add-registration-credit',
