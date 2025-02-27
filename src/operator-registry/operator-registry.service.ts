@@ -115,6 +115,11 @@ export class OperatorRegistryService implements OnApplicationBootstrap {
       )
     }
 
+    this.logger.warn(
+      '[alarm=add-registration-credit-failed] Failed to add registration credit for ' +
+        ` [${JSON.stringify({ address, transactionHash: label, fingerprint })}]`
+    )
+
     return false
   }
 }

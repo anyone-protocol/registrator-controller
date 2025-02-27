@@ -287,6 +287,10 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
         }
       ]
     })
+
+    this.logger.log(
+      '[alarm=enqueued-discover-registrator-events] Enqueued discover registrator events flow'
+    )
   }
 
   private async updateServiceState() {
