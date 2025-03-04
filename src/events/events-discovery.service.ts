@@ -163,7 +163,8 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
             blockNumber: evt.blockNumber,
             blockHash: evt.blockHash,
             transactionHash: evt.transactionHash,
-            address: evt.args[0]
+            address: evt.args[0],
+            fingerprint: evt.args[1]
           })
           newEvents++
         } catch (err) {
