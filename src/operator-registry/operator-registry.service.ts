@@ -108,6 +108,15 @@ export class OperatorRegistryService implements OnApplicationBootstrap {
         result.Error
       )
     } catch (error) {
+      if (error.message.includes('400') && error.message.includes('MessageExists')) {
+        this.logger.warn(
+          `Add-Registration-Credit resulted in a MessageExists Error for ` +
+            ` [${JSON.stringify({ address, transactionHash: label, fingerprint })}]`
+        )
+
+        return true
+      }
+
       this.logger.error(
         `Exception when adding registration credit` +
           ` [${JSON.stringify({ address, transactionHash: label, fingerprint })}]`,
