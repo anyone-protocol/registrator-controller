@@ -2,6 +2,11 @@ job "registrator-controller-live" {
   datacenters = ["ator-fin"]
   type = "service"
 
+  constraint {
+    attribute = "${node.unique.id}"
+    value = "89b957c9-560a-126e-1ae8-13277258fcf1" # anon-hel-arweave-1
+  }
+
   group "registrator-controller-live-group" {
     
     count = 1
