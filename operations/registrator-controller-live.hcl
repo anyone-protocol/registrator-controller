@@ -61,7 +61,7 @@ job "registrator-controller-live" {
         IS_LIVE="true"
         VERSION="[[.commit_sha]]"
         CPU_COUNT="1"
-        DO_CLEAN="false"
+        DO_CLEAN="true"
         REGISTRATOR_CONTRACT_DEPLOYED_BLOCK="6789472"
         IS_LOCAL_LEADER="true"
       }
