@@ -235,6 +235,7 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
         await unfulfilledEvent.save()
         matchedCount++
       } else {
+        this.logger.log(`Unmatched Registered event: [${JSON.stringify(unfulfilledEvent)}]`)
         unmatchedEvents.push(unfulfilledEvent)
       }
     }
