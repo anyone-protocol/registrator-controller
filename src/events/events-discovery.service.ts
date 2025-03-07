@@ -29,6 +29,7 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
 
   private isLive?: string
   private doClean?: string
+  private doDbNuke?: string
   private registratorAddress?: string
   private provider: ethers.WebSocketProvider
   private registratorContract: ethers.Contract
@@ -46,6 +47,7 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
       REGISTRATOR_CONTRACT_DEPLOYED_BLOCK: string
       IS_LIVE: string
       DO_CLEAN: string
+      DO_DB_NUKE: string
     }>,
     private readonly evmProviderService: EvmProviderService,
     private readonly operatorRegistryService: OperatorRegistryService,
@@ -61,6 +63,7 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
   ) {
     this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
     this.doClean = this.config.get<string>('DO_CLEAN', { infer: true })
+    this.doDbNuke = this.config.get<string>('DO_DB_NUKE', { infer: true })
 
     this.registratorAddress = this.config.get<string>(
       'REGISTRATOR_CONTRACT_ADDRESS',
@@ -121,6 +124,12 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
         this.state.isDiscovering = false
         await this.updateServiceState()
       }
+    }
+
+    if (this.doDbNuke === 'true') {
+      this.logger.log('Nuking DB')
+      const { deletedCount } = await this.registeredEventModel.deleteMany({})
+      this.logger.log(`Nuked RegisteredEvent collection: ${deletedCount} del`)
     }
 
     if (this.state.isDiscovering) {
