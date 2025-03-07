@@ -207,14 +207,16 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
     let matchedCount = 0
     const unmatchedEvents: typeof unfulfilledRegisteredEvents = []
     for (const unfulfilledEvent of unfulfilledRegisteredEvents) {
+      const address = unfulfilledEvent.address.toUpperCase()
       if (
         operatorRegistryState
           .RegistrationCreditsFingerprintsToOperatorAddresses[
-          unfulfilledEvent.fingerprint
-        ] === unfulfilledEvent.address ||
-        operatorRegistryState.VerifiedFingerprintsToOperatorAddresses[
-          unfulfilledEvent.fingerprint
-        ] === unfulfilledEvent.address ||
+            unfulfilledEvent.fingerprint
+          ] === address ||
+        operatorRegistryState
+          .VerifiedFingerprintsToOperatorAddresses[
+            unfulfilledEvent.fingerprint
+          ] === address ||
         operatorRegistryState.VerifiedHardwareFingerprints[
           unfulfilledEvent.fingerprint
         ]
