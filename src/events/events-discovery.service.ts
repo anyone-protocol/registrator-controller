@@ -120,7 +120,9 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
     } else {
       this.logger.log('Cleaning up old (24hrs+) jobs')
       await this.discoverRegistratorEventsQueue.drain(true)
-      await this.discoverRegistratorEventsQueue.clean(0, -1)
+      await this.discoverRegistratorEventsQueue.clean(0, -1, 'active')
+      await this.discoverRegistratorEventsQueue.clean(0, -1, 'completed')
+      await this.discoverRegistratorEventsQueue.clean(0, -1, 'failed')
       if (this.state.isDiscovering) {
         this.state.isDiscovering = false
         await this.updateServiceState()

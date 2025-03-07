@@ -93,7 +93,9 @@ export class EventsService
     } else {
       this.logger.log('Cleaning up old (24hrs+) jobs')
       await this.registratorUpdatesQueue.drain(true)
-      await this.registratorUpdatesQueue.clean(0, -1)
+      await this.registratorUpdatesQueue.clean(0, -1, 'active')
+      await this.registratorUpdatesQueue.clean(0, -1, 'completed')
+      await this.registratorUpdatesQueue.clean(0, -1, 'failed')
     }
 
     if (this.registratorAddress != undefined) {
