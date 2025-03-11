@@ -71,13 +71,75 @@ export class OperatorRegistryService implements OnApplicationBootstrap {
     return state
   }
 
+  public async removeRegistrationCredit(
+    address: string,
+    label: string,
+    fingerprint: string    
+  ) {
+    if (!this.signer) {
+      throw new Error('Signer is not defined!')
+    }
+
+    try {
+      const { messageId, result } = await sendAosMessage({
+        processId: this.operatorRegistryProcessId,
+        signer: this.signer as any, // NB: types, lol
+        tags: [
+          { name: 'Action', value: 'Remove-Registration-Credit' },
+          { name: 'Address', value: address },
+          { name: 'Fingerprint', value: fingerprint },
+          { name: 'EVM-TX', value: label }
+        ]
+      })
+
+      if (!result.Error) {
+        this.logger.log(
+          `Removed registration credit from [${address}|${fingerprint}]: ${
+            messageId ?? 'no-message-id'
+          }`
+        )
+      }
+
+      this.logger.warn(
+        `Remove-Registration-Credit resulted in an Error for ` +
+          ` [${JSON.stringify({ address, transactionHash: label, fingerprint })}]`,
+        result.Error
+      )
+    } catch (error) {
+      if (error.message.includes('400') && error.message.includes('MessageExists')) {
+        this.logger.warn(
+          `Remove-Registration-Credit resulted in a MessageExists Error for ` +
+            ` [${JSON.stringify({ address, transactionHash: label, fingerprint })}]`
+        )
+      }
+
+      this.logger.error(
+        `Exception when removing registration credit` +
+          ` [${JSON.stringify({ address, transactionHash: label, fingerprint })}]`,
+        error.stack
+      )
+    }
+  }
+
   public async addRegistrationCredit(
     address: string,
     label: string,
-    fingerprint: string
+    fingerprint: string,
+    checkAndRemoveStaleCredits = true
   ): Promise<boolean> {
     if (!this.signer) {
       throw new Error('Signer is not defined!')
+    }
+
+    if (checkAndRemoveStaleCredits) {
+      const state = await this.getOperatorRegistryState()
+      const existingAddress = state.RegistrationCreditsFingerprintsToOperatorAddresses[fingerprint]
+      if (existingAddress) {
+        this.logger.warn(
+          `Removing stale registration credit from [${existingAddress}|${fingerprint}]`
+        )
+        await this.removeRegistrationCredit(existingAddress, label, fingerprint)
+      }
     }
 
     try {
