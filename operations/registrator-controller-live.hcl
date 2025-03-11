@@ -50,7 +50,6 @@ job "registrator-controller-live" {
           REDIS_HOSTNAME="{{ .Address }}"
           REDIS_PORT="{{ .Port }}"
         {{- end }}
-
         {{$prefix := "worker_" }}
         {{$allocIndex := env "NOMAD_ALLOC_INDEX"}}
         {{$suffix := "_key" }}
