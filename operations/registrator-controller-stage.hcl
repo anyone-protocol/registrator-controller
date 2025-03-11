@@ -37,7 +37,7 @@ job "registrator-controller-stage" {
       }
 
       vault {
-        policies = ["valid-ator-stage", "registrator-controller-service-keys"]
+        policies = ["valid-ator-stage", "registrator-controller-service-keys-stage"]
       }
 
       template {
@@ -62,7 +62,7 @@ job "registrator-controller-stage" {
         {{$prefix := "worker_" }}
         {{$allocIndex := env "NOMAD_ALLOC_INDEX"}}
         {{$suffix := "_key" }}
-        {{with secret "kv/controller-service-keys/registrator-controller" }}
+        {{with secret "kv/controller-service-keys/registrator-controller-stage" }}
           OPERATOR_REGISTRY_CONTROLLER_KEY="{{index .Data.data (print $prefix $allocIndex $suffix) }}"
         {{end}}
         EOH
