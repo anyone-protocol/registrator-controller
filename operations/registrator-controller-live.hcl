@@ -8,7 +8,7 @@ job "registrator-controller-live" {
   }
 
   group "registrator-controller-live-group" {
-    count = 1
+    count = 2
 
     network {
       mode = "bridge"
