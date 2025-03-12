@@ -220,18 +220,11 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
     const unmatchedEvents: typeof unfulfilledRegisteredEvents = []
     for (const unfulfilledEvent of unfulfilledRegisteredEvents) {
       const address = `0x${unfulfilledEvent.address.substring(2).toUpperCase()}`
+      const fingerprint = unfulfilledEvent.fingerprint
       if (
-        operatorRegistryState
-          .RegistrationCreditsFingerprintsToOperatorAddresses[
-            unfulfilledEvent.fingerprint
-          ] === address ||
-        operatorRegistryState
-          .VerifiedFingerprintsToOperatorAddresses[
-            unfulfilledEvent.fingerprint
-          ] === address ||
-        operatorRegistryState.VerifiedHardwareFingerprints[
-          unfulfilledEvent.fingerprint
-        ]
+        operatorRegistryState.RegistrationCreditsFingerprintsToOperatorAddresses[fingerprint] === address ||
+        operatorRegistryState.VerifiedFingerprintsToOperatorAddresses[fingerprint] === address ||
+        operatorRegistryState.VerifiedHardwareFingerprints[fingerprint]
       ) {
         unfulfilledEvent.fulfilled = true
         await unfulfilledEvent.save()
@@ -266,8 +259,9 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
     }
 
     const duplicates = unmatchedEvents.length - unmatchedToQueue.length
-    const lastSafeCompleteBlock =
-      unmatchedToQueue.at(0)?.blockNumber || currentBlock
+    const lastSafeCompleteBlock = unmatchedToQueue.length > 0
+      ? unmatchedToQueue[0].blockNumber
+      : currentBlock
 
     this.logger.log(
       `Matched ${matchedCount} Registered events to Operator Registry State` +

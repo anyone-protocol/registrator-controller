@@ -133,13 +133,14 @@ export class OperatorRegistryService implements OnApplicationBootstrap {
 
     if (checkAndRemoveStaleCredits) {
       const state = await this.getOperatorRegistryState()
+      const uppercaseAddress = `0x${address.substring(2).toUpperCase()}`
       const existingAddress = state.RegistrationCreditsFingerprintsToOperatorAddresses[fingerprint]
-      if (existingAddress && existingAddress !== address) {
+      if (existingAddress && existingAddress !== uppercaseAddress) {
         this.logger.warn(
           `Removing stale registration credit from [${existingAddress}|${fingerprint}]`
         )
         await this.removeRegistrationCredit(existingAddress, label, fingerprint)
-      } else {
+      } else if (existingAddress && existingAddress === uppercaseAddress) {
         this.logger.warn(`Registration credit already exists for [${address}|${fingerprint}]`)
         return true
       }
