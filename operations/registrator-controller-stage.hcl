@@ -78,6 +78,7 @@ job "registrator-controller-stage" {
         DO_CLEAN="true"
         REGISTRATOR_CONTRACT_DEPLOYED_BLOCK="6204399"
         IS_LOCAL_LEADER="true"
+        CU_URL="https://cu.ardrive.io"
       }
       
       resources {
