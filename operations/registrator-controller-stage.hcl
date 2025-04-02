@@ -8,7 +8,7 @@ job "registrator-controller-stage" {
   }
 
   group "registrator-controller-stage-group" {
-    count = 2
+    count = 1
 
     update {
       stagger      = "30s"
@@ -30,6 +30,7 @@ job "registrator-controller-stage" {
     }
 
     task "registrator-controller-stage-service" {
+      kill_timeout = "30s"
       driver = "docker"
       config {
         image = "ghcr.io/anyone-protocol/registrator-controller:b4ddd595e8532bf0e79d0357b44f48636a60a089"
