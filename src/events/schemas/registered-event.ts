@@ -4,7 +4,7 @@ import { HydratedDocument } from 'mongoose'
 @Schema()
 export class RegisteredEvent {
   @Prop({ type: String, required: true, default: 'Registered' })
-  eventName: 'Registered'
+  eventName: 'Registered' | 'Locked'
 
   @Prop({ type: Number, required: true })
   blockNumber: number

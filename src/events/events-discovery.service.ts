@@ -3,7 +3,7 @@ import { Injectable, Logger, OnApplicationBootstrap } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { InjectModel } from '@nestjs/mongoose'
 import { FlowProducer, Queue } from 'bullmq'
-import { ethers } from 'ethers'
+import { ethers, EthersError } from 'ethers'
 import { sortBy, uniqBy } from 'lodash'
 import { Model, Types as MongooseTypes } from 'mongoose'
 
@@ -14,6 +14,8 @@ import { EvmProviderService } from '../evm-provider/evm-provider.service'
 import { RegisteredEvent } from './schemas/registered-event'
 import { OperatorRegistryService } from '../operator-registry/operator-registry.service'
 import { EventsService } from './events.service'
+import { hodlerLocksAbi } from './abi/hodlerLocks'
+import { DiscoverHodlerEventsQueue } from './processors/discover-hodler-events-queue'
 
 @Injectable()
 export class EventsDiscoveryService implements OnApplicationBootstrap {
@@ -35,6 +37,10 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
   private registratorContract: ethers.Contract
   private registratorContractDeployedBlock: ethers.BlockTag
 
+  private hodlerAddress: string
+  private hodlerContract: ethers.Contract
+  private hodlerContractDeployedBlock: ethers.BlockTag
+
   private state: {
     _id?: MongooseTypes.ObjectId
     isDiscovering: boolean
@@ -45,6 +51,8 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
     private readonly config: ConfigService<{
       REGISTRATOR_CONTRACT_ADDRESS: string
       REGISTRATOR_CONTRACT_DEPLOYED_BLOCK: string
+      HODLER_CONTRACT_ADDRESS: string
+      HODLER_CONTRACT_DEPLOYED_BLOCK: string
       IS_LIVE: string
       DO_CLEAN: string
       DO_DB_NUKE: string
@@ -56,6 +64,10 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
     public discoverRegistratorEventsQueue: Queue,
     @InjectFlowProducer('discover-registrator-events-flow')
     public discoverRegistratorEventsFlow: FlowProducer,
+    @InjectQueue('discover-hodler-events-queue')
+    public discoverHodlerEventsQueue: Queue,
+    @InjectFlowProducer('discover-hodler-events-flow')
+    public discoverHodlerEventsFlow: FlowProducer,
     @InjectModel(EventsDiscoveryServiceState.name)
     private readonly eventsDiscoveryServiceStateModel: Model<EventsDiscoveryServiceState>,
     @InjectModel(RegisteredEvent.name)
@@ -83,9 +95,27 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
       throw new Error('REGISTRATOR_CONTRACT_DEPLOYED_BLOCK is NaN!')
     }
 
+    this.hodlerAddress = this.config.get<string>(
+      'HODLER_CONTRACT_ADDRESS',
+      { infer: true }
+    )
+    if (!this.hodlerAddress) {
+      throw new Error('HODLER_CONTRACT_ADDRESS is not set!')
+    }
+
+    const hodlerContractDeployedBlock = Number.parseInt(
+      this.config.get<string>('HODLER_CONTRACT_DEPLOYED_BLOCK', {
+        infer: true
+      })
+    )
+    this.hodlerContractDeployedBlock = hodlerContractDeployedBlock
+    if (Number.isNaN(hodlerContractDeployedBlock)) {
+      throw new Error('HODLER_CONTRACT_DEPLOYED_BLOCK is NaN!')
+    }
+
     this.logger.log(
       `Initializing events discovery service (IS_LIVE: ${this.isLive}, ` +
-        `REGISTRATOR: ${this.registratorAddress})`
+        `REGISTRATOR: ${this.registratorAddress} HODLER: ${this.hodlerAddress})`
     )
   }
 
@@ -98,11 +128,22 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
           registratorABI,
           this.provider
         )
+        this.hodlerContract = new ethers.Contract(
+          this.hodlerAddress,
+          hodlerLocksAbi,
+          this.provider
+        )
       }
     )
     this.registratorContract = new ethers.Contract(
       this.registratorAddress,
       registratorABI,
+      this.provider
+    )
+
+    this.hodlerContract = new ethers.Contract(
+      this.hodlerAddress,
+      hodlerLocksAbi,
       this.provider
     )
 
@@ -123,6 +164,11 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
       await this.discoverRegistratorEventsQueue.clean(0, -1, 'active')
       await this.discoverRegistratorEventsQueue.clean(0, -1, 'completed')
       await this.discoverRegistratorEventsQueue.clean(0, -1, 'failed')
+
+      await this.discoverHodlerEventsQueue.drain(true)
+      await this.discoverHodlerEventsQueue.clean(0, -1, 'active')
+      await this.discoverHodlerEventsQueue.clean(0, -1, 'completed')
+      await this.discoverHodlerEventsQueue.clean(0, -1, 'failed')
       if (this.state.isDiscovering) {
         this.state.isDiscovering = false
         await this.updateServiceState()
@@ -139,8 +185,140 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
       this.logger.log('Discovering registrator events should already be queued')
     } else {
       await this.enqueueDiscoverRegistratorEventsFlow(0)
+      await this.enqueueDiscoverHodlerEventsFlow(0)
       this.logger.log('Queued immediate discovery of registrator events')
     }
+  }
+
+  public async discoverLockedEvents(from?: ethers.BlockTag) {
+    const fromBlock = from || this.hodlerContractDeployedBlock
+
+    this.logger.log(
+      `Discovering Locked events from block ${fromBlock.toString()}`
+    )
+
+    const filter = this.hodlerContract.filters['Locked']()
+    const events = (await this.hodlerContract.queryFilter(
+      filter,
+      fromBlock
+    )) as ethers.EventLog[]
+
+    this.logger.log(
+      `Found ${events.length} Locked events` +
+        ` since block ${fromBlock.toString()}`
+    )
+
+    let knownEvents = 0,
+      newEvents = 0
+    for (const evt of events) {
+      const knownEvent = await this.registeredEventModel.findOne({
+        eventName: 'Locked',
+        transactionHash: evt.transactionHash
+      })
+
+      if (!knownEvent) {
+        try {
+          await this.registeredEventModel.create({
+            blockNumber: evt.blockNumber,
+            blockHash: evt.blockHash,
+            transactionHash: evt.transactionHash,
+            address: evt.args[0],
+            fingerprint: evt.args[1]
+          })
+          newEvents++
+        } catch (err) {
+          this.logger.error(`RegisteredEvent model creation error`, err.stack)
+        }
+      } else {
+        knownEvents++
+      }
+    }
+
+    this.logger.log(
+      `Stored ${newEvents} newly discovered` +
+        ` Locked events` +
+        ` and skipped storing ${knownEvents} previously known` +
+        ` out of ${events.length} total`
+    )
+  }
+  
+  public async matchDiscoveredLockedEvents(currentBlock: number) {
+    this.logger.log('Matching Locked events to Operator Registry State')
+
+    const unfulfilledRegisteredEvents = await this.registeredEventModel.find({
+      eventName: 'Locked',
+      fulfilled: false
+    })
+
+    if (unfulfilledRegisteredEvents.length < 1) {
+      this.logger.log(`No unfulfilled Registered events to match`)
+
+      return
+    }
+
+    this.logger.log(
+      `Found ${unfulfilledRegisteredEvents.length}` +
+        ` unfulfilled Registered events`
+    )
+
+    const operatorRegistryState =
+      await this.operatorRegistryService.getOperatorRegistryState()
+
+    let matchedCount = 0
+    const unmatchedEvents: typeof unfulfilledRegisteredEvents = []
+    for (const unfulfilledEvent of unfulfilledRegisteredEvents) {
+      const address = `0x${unfulfilledEvent.address.substring(2).toUpperCase()}`
+      const fingerprint = unfulfilledEvent.fingerprint
+      if (
+        operatorRegistryState.RegistrationCreditsFingerprintsToOperatorAddresses[fingerprint] === address ||
+        operatorRegistryState.VerifiedFingerprintsToOperatorAddresses[fingerprint] === address ||
+        operatorRegistryState.VerifiedHardwareFingerprints[fingerprint]
+      ) {
+        unfulfilledEvent.fulfilled = true
+        await unfulfilledEvent.save()
+        matchedCount++
+      } else {
+        this.logger.log(`Unmatched Locked event: [${JSON.stringify(unfulfilledEvent)}]`)
+        unmatchedEvents.push(unfulfilledEvent)
+      }
+    }
+
+    const unmatchedToQueue = sortBy(
+      uniqBy(
+        unmatchedEvents.map(
+          ({ address, fingerprint, transactionHash, blockNumber }) => ({
+            address,
+            fingerprint,
+            transactionHash,
+            blockNumber
+          })
+        ),
+        ({ address, fingerprint }) => address + fingerprint
+      ),
+      'blockNumber'
+    )
+
+    for (const { address, fingerprint, transactionHash } of unmatchedToQueue) {
+      await this.eventsService.enqueueAddRegistrationCredit(
+        address,
+        transactionHash,
+        fingerprint
+      )
+    }
+
+    const duplicates = unmatchedEvents.length - unmatchedToQueue.length
+    const lastSafeCompleteBlock = unmatchedToQueue.length > 0
+      ? unmatchedToQueue[0].blockNumber
+      : currentBlock
+
+    this.logger.log(
+      `Matched ${matchedCount} Locked events to Operator Registry State` +
+        ` and enqueued ${unmatchedToQueue.length}` +
+        ` Add-Registration-Credit jobs` +
+        ` (${duplicates} duplicate address/fingerprint credits)`
+    )
+
+    await this.setLastSafeCompleteBlockNumber(lastSafeCompleteBlock)
   }
 
   public async discoverRegisteredEvents(from?: ethers.BlockTag) {
@@ -199,6 +377,7 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
     this.logger.log('Matching Registered events to Operator Registry State')
 
     const unfulfilledRegisteredEvents = await this.registeredEventModel.find({
+      eventName: 'Registered',
       fulfilled: false
     })
 
@@ -300,6 +479,36 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
 
     this.logger.log(
       '[alarm=enqueued-discover-registrator-events] Enqueued discover registrator events flow'
+    )
+  }
+  
+  public async enqueueDiscoverHodlerEventsFlow(
+    delayJob: number = 1000 * 60 * 60 * 1
+  ) {
+    if (!this.state.isDiscovering) {
+      this.state.isDiscovering = true
+      await this.updateServiceState()
+    }
+
+    const currentBlock = await this.provider.getBlockNumber()
+
+    await this.discoverHodlerEventsFlow.add({
+      name: DiscoverHodlerEventsQueue.JOB_MATCH_REGISTERED_EVENTS,
+      queueName: 'discover-hodler-events-queue',
+      opts: EventsDiscoveryService.jobOpts,
+      data: { currentBlock },
+      children: [
+        {
+          name: DiscoverHodlerEventsQueue.JOB_DISCOVER_REGISTERED_EVENTS,
+          queueName: 'discover-hodler-events-queue',
+          opts: { delay: delayJob, ...EventsDiscoveryService.jobOpts },
+          data: { currentBlock }
+        }
+      ]
+    })
+
+    this.logger.log(
+      '[alarm=enqueued-discover-hodler-events] Enqueued discover hodler events flow'
     )
   }
 

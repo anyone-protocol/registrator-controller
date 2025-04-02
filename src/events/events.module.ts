@@ -16,6 +16,7 @@ import {
   RegisteredEvent,
   RegisteredEventSchema
 } from './schemas/registered-event'
+import { DiscoverHodlerEventsQueue } from './processors/discover-hodler-events-queue'
 
 @Module({
   imports: [
@@ -33,6 +34,13 @@ import {
     BullModule.registerFlowProducer({
       name: 'discover-registrator-events-flow'
     }),
+    BullModule.registerQueue({
+      name: 'discover-hodler-events-queue',
+      streams: { events: { maxLen: 1000 } }
+    }),
+    BullModule.registerFlowProducer({
+      name: 'discover-hodler-events-flow'
+    }),
     MongooseModule.forFeature([
       {
         name: EventsDiscoveryServiceState.name,
@@ -48,7 +56,8 @@ import {
     EventsService,
     EventsDiscoveryService,
     RegistratorUpdatesQueue,
-    DiscoverRegistratorEventsQueue
+    DiscoverRegistratorEventsQueue,
+    DiscoverHodlerEventsQueue
   ],
   exports: [EventsService]
 })
