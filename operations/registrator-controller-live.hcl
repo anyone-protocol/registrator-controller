@@ -68,7 +68,6 @@ job "registrator-controller-live" {
         CPU_COUNT="1"
         DO_CLEAN="true"
         REGISTRATOR_CONTRACT_DEPLOYED_BLOCK="6789472"
-        IS_LOCAL_LEADER="true"
         CU_URL="https://cu.ardrive.io"
       }
       

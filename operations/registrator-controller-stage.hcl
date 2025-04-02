@@ -42,8 +42,10 @@ job "registrator-controller-stage" {
 
       template {
         data = <<-EOH
-        OPERATOR_REGISTRY_PROCESS_ID="cFTzntWbZFBfReuz9pAY7wRoRVlYuCW5TH90jiwN6hI"
-        REGISTRATOR_CONTRACT_ADDRESS="0xa7325b28ED397AC0391529425bB7d5C34dD4FD74"
+        OPERATOR_REGISTRY_PROCESS_ID="[[ consulKey "smart-contracts/stage/operator-registry-address" ]]"
+        REGISTRATOR_CONTRACT_ADDRESS="[[ consulKey "registrator/sepolia/stage/address" ]]"
+        HODLER_CONTRACT_ADDRESS="[[ consulKey "hodler/sepolia/stage/address" ]]"
+
         {{with secret "kv/valid-ator/stage"}}
           REGISTRATOR_OPERATOR_KEY="{{.Data.data.REGISTRATOR_OPERATOR_KEY}}"
           EVM_NETWORK="{{.Data.data.INFURA_NETWORK}}"
@@ -73,11 +75,11 @@ job "registrator-controller-stage" {
       env {
         BUMP="redeploy-rewards-3"
         IS_LIVE="true"
-        VERSION="b4ddd595e8532bf0e79d0357b44f48636a60a089"
+        VERSION="[[.commit_sha]]"
         CPU_COUNT="1"
-        DO_CLEAN="true"
+        DO_CLEAN="false"
         REGISTRATOR_CONTRACT_DEPLOYED_BLOCK="6204399"
-        IS_LOCAL_LEADER="true"
+        HODLER_CONTRACT_DEPLOYED_BLOCK="7879442"
         CU_URL="https://cu.ardrive.io"
       }
       

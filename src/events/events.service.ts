@@ -12,6 +12,7 @@ import { ethers, AddressLike } from 'ethers'
 
 import { registratorABI } from './abi/registrator'
 import { EvmProviderService } from '../evm-provider/evm-provider.service'
+import { hodlerLocksAbi } from './abi/hodlerLocks'
 
 @Injectable()
 @QueueEventsListener('facilitator-updates-queue')
@@ -39,9 +40,13 @@ export class EventsService
   private registratorOperator: ethers.Wallet
   private registratorContract: ethers.Contract
   private registratorSignerContract: ethers.Contract
+  
+  private hodlerAddress: string | undefined
+  private hodlerContract: ethers.Contract
 
   constructor(
     private readonly config: ConfigService<{
+      HODLER_CONTRACT_ADDRESS: string
       REGISTRATOR_CONTRACT_ADDRESS: string
       REGISTRATOR_OPERATOR_KEY: string
       IS_LIVE: string
@@ -57,6 +62,14 @@ export class EventsService
 
     this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
     this.doClean = this.config.get<string>('DO_CLEAN', { infer: true })
+
+    this.hodlerAddress = this.config.get<string>(
+      'HODLER_CONTRACT_ADDRESS',
+      { infer: true }
+    )
+    if (!this.hodlerAddress) {
+      throw new Error('HODLER_CONTRACT_ADDRESS is not set!')
+    }
 
     this.registratorAddress = this.config.get<string>(
       'REGISTRATOR_CONTRACT_ADDRESS',
@@ -96,6 +109,17 @@ export class EventsService
       await this.registratorUpdatesQueue.clean(0, -1, 'active')
       await this.registratorUpdatesQueue.clean(0, -1, 'completed')
       await this.registratorUpdatesQueue.clean(0, -1, 'failed')
+    }
+
+    if (this.hodlerAddress != undefined) {
+      this.subscribeToHodler().catch((error) =>
+        this.logger.error('Failed subscribing to hodler events:', error)
+      )
+    } else {
+      this.logger.warn(
+        'Missing HODLER_CONTRACT_ADDRESS, ' +
+          'not subscribing to Hodler Locking EVM events'
+      )
     }
 
     if (this.registratorAddress != undefined) {
@@ -156,6 +180,83 @@ export class EventsService
     } else {
       this.logger.error(
         'Trying to request facility update but missing address in data'
+      )
+    }
+  }
+
+  private async onLockedEvent(
+    hodler: AddressLike,
+    fingerprint: string | Promise<string>,
+    amount: ethers.BigNumberish,
+    event: ethers.EventLog
+  ) {
+    let hodlerString: string
+    if (hodler instanceof Promise) {
+      hodlerString = await hodler
+    } else if (ethers.isAddressable(hodler)) {
+      hodlerString = await hodler.getAddress()
+    } else {
+      hodlerString = hodler
+    }
+
+    let fingerprintString: string
+    if (fingerprint instanceof Promise) {
+      fingerprintString = await fingerprint
+    } else {
+      fingerprintString = fingerprint
+    }
+
+    let transactionHash = event.transactionHash
+    if (!event.transactionHash) {
+      const tx = await event.getTransaction()
+      transactionHash = tx.hash
+    }
+
+    if (hodlerString != undefined) {
+      this.logger.log(
+        `Noticed hodler lock for ${hodlerString} ` +
+          `with fingerprint ${fingerprintString} ` +
+          `and tx ${transactionHash}`
+      )
+      await this.enqueueAddRegistrationCredit(
+        hodlerString,
+        transactionHash,
+        fingerprintString
+      )
+    } else {
+      this.logger.error(
+        'Trying to request hodler lock update but missing address in data'
+      )
+    }
+  }
+
+  private async subscribeToHodler() {
+    try {
+      if (!this.hodlerAddress) {
+        this.logger.error(
+          'Missing HODLER_CONTRACT_ADDRESS.' +
+            ' Skipping registrator subscription'
+        )
+      } else {
+        this.logger.log(
+          `Subscribing to the Hodler contract` +
+            ` ${this.hodlerAddress} ...`
+        )
+
+        this.hodlerContract = new ethers.Contract(
+          this.hodlerAddress,
+          hodlerLocksAbi,
+          this.provider
+        )
+        this.hodlerContract.on(
+          'Locked',
+          this.onLockedEvent.bind(this)
+        )
+      }
+    } catch (error) {
+      this.logger.error(
+        `Caught error while subscribing to hodler events:`,
+        error.stack
       )
     }
   }
