@@ -68,7 +68,7 @@ job "registrator-controller-live" {
         CPU_COUNT="1"
         DO_CLEAN="true"
         REGISTRATOR_CONTRACT_DEPLOYED_BLOCK="6789472"
-        CU_URL="https://cu.ardrive.io"
+        CU_URL="https://cu.anyone.permaweb.services"
       }
       
       resources {
