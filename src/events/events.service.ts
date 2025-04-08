@@ -41,12 +41,14 @@ export class EventsService
   private registratorContract: ethers.Contract
   private registratorSignerContract: ethers.Contract
   
+  private useHodler: string | undefined
   private hodlerAddress: string | undefined
   private hodlerContract: ethers.Contract
 
   constructor(
     private readonly config: ConfigService<{
       HODLER_CONTRACT_ADDRESS: string
+      USE_HODLER: string
       REGISTRATOR_CONTRACT_ADDRESS: string
       REGISTRATOR_OPERATOR_KEY: string
       IS_LIVE: string
@@ -63,12 +65,19 @@ export class EventsService
     this.isLive = this.config.get<string>('IS_LIVE', { infer: true })
     this.doClean = this.config.get<string>('DO_CLEAN', { infer: true })
 
+    this.useHodler = this.config.get<string>(
+      'REGISTRATOR_CONTRACT_ADDRESS',
+      { infer: true }
+    )
+
     this.hodlerAddress = this.config.get<string>(
       'HODLER_CONTRACT_ADDRESS',
       { infer: true }
     )
     if (!this.hodlerAddress) {
-      throw new Error('HODLER_CONTRACT_ADDRESS is not set!')
+      if (this.useHodler == 'true') {
+        throw new Error('HODLER_CONTRACT_ADDRESS is not set!')
+      }
     }
 
     this.registratorAddress = this.config.get<string>(
