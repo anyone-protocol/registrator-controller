@@ -37,7 +37,8 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
   private registratorContract: ethers.Contract
   private registratorContractDeployedBlock: ethers.BlockTag
 
-  private hodlerAddress: string
+  private useHodler: string | undefined
+  private hodlerAddress: string | undefined
   private hodlerContract: ethers.Contract
   private hodlerContractDeployedBlock: ethers.BlockTag
 
@@ -53,6 +54,7 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
       REGISTRATOR_CONTRACT_DEPLOYED_BLOCK: string
       HODLER_CONTRACT_ADDRESS: string
       HODLER_CONTRACT_DEPLOYED_BLOCK: string
+      USE_HODLER: string
       IS_LIVE: string
       DO_CLEAN: string
       DO_DB_NUKE: string
@@ -77,6 +79,11 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
     this.doClean = this.config.get<string>('DO_CLEAN', { infer: true })
     this.doDbNuke = this.config.get<string>('DO_DB_NUKE', { infer: true })
 
+    this.useHodler = this.config.get<string>(
+      'USE_HODLER',
+      { infer: true }
+    )
+
     this.registratorAddress = this.config.get<string>(
       'REGISTRATOR_CONTRACT_ADDRESS',
       { infer: true }
@@ -95,22 +102,24 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
       throw new Error('REGISTRATOR_CONTRACT_DEPLOYED_BLOCK is NaN!')
     }
 
-    this.hodlerAddress = this.config.get<string>(
-      'HODLER_CONTRACT_ADDRESS',
-      { infer: true }
-    )
-    if (!this.hodlerAddress) {
-      throw new Error('HODLER_CONTRACT_ADDRESS is not set!')
-    }
+    if (this.useHodler == 'true') {
+      this.hodlerAddress = this.config.get<string>(
+        'HODLER_CONTRACT_ADDRESS',
+        { infer: true }
+      )
+      if (!this.hodlerAddress) {
+        throw new Error('HODLER_CONTRACT_ADDRESS is not set!')
+      }
 
-    const hodlerContractDeployedBlock = Number.parseInt(
-      this.config.get<string>('HODLER_CONTRACT_DEPLOYED_BLOCK', {
-        infer: true
-      })
-    )
-    this.hodlerContractDeployedBlock = hodlerContractDeployedBlock
-    if (Number.isNaN(hodlerContractDeployedBlock)) {
-      throw new Error('HODLER_CONTRACT_DEPLOYED_BLOCK is NaN!')
+      const hodlerContractDeployedBlock = Number.parseInt(
+        this.config.get<string>('HODLER_CONTRACT_DEPLOYED_BLOCK', {
+          infer: true
+        })
+      )
+      this.hodlerContractDeployedBlock = hodlerContractDeployedBlock
+      if (Number.isNaN(hodlerContractDeployedBlock)) {
+        throw new Error('HODLER_CONTRACT_DEPLOYED_BLOCK is NaN!')
+      }
     }
 
     this.logger.log(
@@ -128,11 +137,13 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
           registratorABI,
           this.provider
         )
-        this.hodlerContract = new ethers.Contract(
-          this.hodlerAddress,
-          hodlerLocksAbi,
-          this.provider
-        )
+        if (this.useHodler == 'true') {
+          this.hodlerContract = new ethers.Contract(
+            this.hodlerAddress,
+            hodlerLocksAbi,
+            this.provider
+          )
+        }
       }
     )
     this.registratorContract = new ethers.Contract(
@@ -140,12 +151,13 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
       registratorABI,
       this.provider
     )
-
-    this.hodlerContract = new ethers.Contract(
-      this.hodlerAddress,
-      hodlerLocksAbi,
-      this.provider
-    )
+    if (this.useHodler == 'true') {
+      this.hodlerContract = new ethers.Contract(
+        this.hodlerAddress,
+        hodlerLocksAbi,
+        this.provider
+      )
+    }
 
     const eventsDiscoveryServiceState =
       await this.eventsDiscoveryServiceStateModel.findOne()
@@ -185,7 +197,9 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
       this.logger.log('Discovering registrator events should already be queued')
     } else {
       await this.enqueueDiscoverRegistratorEventsFlow(0)
-      await this.enqueueDiscoverHodlerEventsFlow(0)
+      if (this.useHodler == 'true') {
+        await this.enqueueDiscoverHodlerEventsFlow(0)
+      }
       this.logger.log('Queued immediate discovery of registrator events')
     }
   }

@@ -66,7 +66,7 @@ export class EventsService
     this.doClean = this.config.get<string>('DO_CLEAN', { infer: true })
 
     this.useHodler = this.config.get<string>(
-      'REGISTRATOR_CONTRACT_ADDRESS',
+      'USE_HODLER',
       { infer: true }
     )
 
