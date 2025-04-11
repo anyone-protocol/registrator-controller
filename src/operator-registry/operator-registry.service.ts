@@ -58,6 +58,20 @@ export class OperatorRegistryService implements OnApplicationBootstrap {
       processId: this.operatorRegistryProcessId,
       tags: [{ name: 'Action', value: 'View-State' }]
     })
+
+    if (result.Error) {
+      this.logger.error(
+        `Error when calling View-State on operator registry process: ${result.Error}`
+      )
+      throw new Error(result.Error)
+    }
+    if (!result.Messages || result.Messages.length < 1) {
+      this.logger.error(
+        `Error when calling View-State on operator registry process: no messages`
+      )
+      throw new Error('No messages returned from View-State')
+    }
+
     const state = JSON.parse(result.Messages[0].Data)
 
     for (const prop in state) {
