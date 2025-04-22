@@ -76,7 +76,7 @@ job "registrator-controller-stage" {
           EVM_JSON_RPC="https://sepolia.infura.io/v3/{{ index .Data.data (print $apiKeyPrefix $allocIndex) }}"
         {{ end }}
         {{ with secret "kv/jsonrpc/stage/registrator-controller/alchemy/eth" }}
-          EVM_SECONDARY_WSS="wss://eth-mainnet.g.alchemy.com/v2/{{ index .Data.data (print $apiKeyPrefix $allocIndex) }}"
+          EVM_SECONDARY_WSS="wss://eth-sepolia.g.alchemy.com/v2/{{ index .Data.data (print $apiKeyPrefix $allocIndex) }}"
         {{ end }}
         EOH
         destination = "local/file.env"
