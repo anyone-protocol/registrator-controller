@@ -79,7 +79,7 @@ job "registrator-controller-stage" {
           EVM_SECONDARY_WSS="wss://eth-sepolia.g.alchemy.com/v2/{{ index .Data.data (print $apiKeyPrefix $allocIndex) }}"
         {{ end }}
         EOH
-        destination = "local/file.env"
+        destination = "secrets/file.env"
         env         = true
       }
 
