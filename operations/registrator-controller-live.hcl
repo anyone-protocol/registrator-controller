@@ -10,6 +10,14 @@ job "registrator-controller-live" {
   group "registrator-controller-live-group" {
     count = 2
 
+    update {
+      stagger      = "30s"
+      max_parallel = 1
+      canary       = 1
+      auto_revert  = true
+      auto_promote = true
+    }
+
     network {
       mode = "bridge"
       port "registrator-controller-port" {
@@ -29,20 +37,19 @@ job "registrator-controller-live" {
       }
 
       vault {
-        policies = ["valid-ator-live", "registrator-controller-service-keys"]
+        policies = [
+          "valid-ator-live",
+          "registrator-controller-service-keys",
+          "jsonrpc-live-registrator-controller-eth"
+        ]
       }
 
       template {
         data = <<-EOH
         OPERATOR_REGISTRY_PROCESS_ID="[[ consulKey "smart-contracts/live/operator-registry-address" ]]"
         REGISTRATOR_CONTRACT_ADDRESS="[[ consulKey "registrator/sepolia/live/address" ]]"
-        {{with secret "kv/valid-ator/live"}}
-          REGISTRATOR_OPERATOR_KEY="{{.Data.data.REGISTRATOR_OPERATOR_KEY}}"
-          EVM_NETWORK="{{.Data.data.INFURA_NETWORK}}"
-          EVM_PRIMARY_WSS="{{.Data.data.INFURA_WS_URL}}"
-          EVM_SECONDARY_WSS="{{.Data.data.ALCHEMY_WS_URL}}"
-          EVM_JSON_RPC="{{.Data.data.JSON_RPC}}"
-        {{end}}
+        HODLER_CONTRACT_ADDRESS="[[ consulKey "hodler/sepolia/live/address" ]]"
+
         {{- range service "validator-live-mongo" }}
           MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/registrator-controller-live"
         {{- end }}
@@ -50,12 +57,26 @@ job "registrator-controller-live" {
           REDIS_HOSTNAME="{{ .Address }}"
           REDIS_PORT="{{ .Port }}"
         {{- end }}
-        {{$prefix := "worker_" }}
-        {{$allocIndex := env "NOMAD_ALLOC_INDEX"}}
-        {{$suffix := "_key" }}
-        {{with secret "kv/controller-service-keys/registrator-controller" }}
-          OPERATOR_REGISTRY_CONTROLLER_KEY="{{index .Data.data (print $prefix $allocIndex $suffix) }}"
-        {{end}}
+
+        {{ $workerPrefix := "worker_" }}
+        {{ $apiKeyPrefix := "api_key_" }}
+        {{ $allocIndex := env "NOMAD_ALLOC_INDEX" }}
+        {{ $workerSuffix := "_key" }}
+
+        {{ with secret "kv/valid-ator/live" }}
+          REGISTRATOR_OPERATOR_KEY="{{ .Data.data.REGISTRATOR_OPERATOR_KEY }}"
+          EVM_NETWORK="{{ .Data.data.INFURA_NETWORK }}"
+        {{ end }}
+        {{ with secret "kv/controller-service-keys/registrator-controller" }}
+          OPERATOR_REGISTRY_CONTROLLER_KEY="{{ index .Data.data (print $workerPrefix $allocIndex $workerSuffix) }}"
+        {{ end }}
+        {{ with secret "kv/jsonrpc/live/registrator-controller/infura/eth" }}
+          EVM_PRIMARY_WSS="wss://sepolia.infura.io/ws/v3/{{ index .Data.data (print $apiKeyPrefix $allocIndex) }}"
+          EVM_JSON_RPC="https://sepolia.infura.io/v3/{{ index .Data.data (print $apiKeyPrefix $allocIndex) }}"
+        {{ end }}
+        {{ with secret "kv/jsonrpc/live/registrator-controller/alchemy/eth" }}
+          EVM_SECONDARY_WSS="wss://eth-sepolia.g.alchemy.com/v2/{{ index .Data.data (print $apiKeyPrefix $allocIndex) }}"
+        {{ end }}
         EOH
         destination = "secrets/file.env"
         env         = true
