@@ -8,7 +8,7 @@ job "registrator-controller-stage" {
   }
 
   group "registrator-controller-stage-group" {
-    count = 1
+    count = 2
 
     update {
       stagger      = "30s"
