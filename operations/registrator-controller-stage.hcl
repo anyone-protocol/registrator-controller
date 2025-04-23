@@ -84,7 +84,7 @@ job "registrator-controller-stage" {
       }
 
       env {
-        BUMP="redeploy-rewards-3"
+        BUMP="redeploy-rewards-4"
         IS_LIVE="true"
         VERSION="[[.commit_sha]]"
         CPU_COUNT="1"
