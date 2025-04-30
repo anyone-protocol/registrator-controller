@@ -35,6 +35,7 @@ export class EventsService
 
   private provider: ethers.WebSocketProvider
 
+  private useRegistrator: string | undefined
   private registratorAddress: string | undefined
   private registratorOperatorKey: string | undefined
   private registratorOperator: ethers.Wallet
@@ -49,6 +50,7 @@ export class EventsService
     private readonly config: ConfigService<{
       HODLER_CONTRACT_ADDRESS: string
       USE_HODLER: string
+      USE_REGISTRATOR: string
       REGISTRATOR_CONTRACT_ADDRESS: string
       REGISTRATOR_OPERATOR_KEY: string
       IS_LIVE: string
@@ -70,6 +72,11 @@ export class EventsService
       { infer: true }
     )
 
+    this.useRegistrator = this.config.get<string>(
+      'USE_REGISTRATOR',
+      { infer: true }
+    )
+
     this.hodlerAddress = this.config.get<string>(
       'HODLER_CONTRACT_ADDRESS',
       { infer: true }
@@ -85,7 +92,9 @@ export class EventsService
       { infer: true }
     )
     if (!this.registratorAddress) {
-      throw new Error('REGISTRATOR_CONTRACT_ADDRESS is not set!')
+      if (this.useRegistrator == 'true') {
+        throw new Error('REGISTRATOR_CONTRACT_ADDRESS is not set!')
+      }
     }
 
     this.registratorOperatorKey = this.config.get<string>(
@@ -106,7 +115,12 @@ export class EventsService
     this.provider = await this.evmProviderService.getCurrentWebSocketProvider(
       (async provider => {
         this.provider = provider
-        await this.subscribeToRegistrator()
+        if (this.useRegistrator == 'true') {
+          await this.subscribeToRegistrator()
+        }
+        if (this.useHodler == 'true') {
+          await this.subscribeToHodler()
+        }
       }).bind(this)
     )
 
@@ -120,26 +134,30 @@ export class EventsService
       await this.registratorUpdatesQueue.clean(0, -1, 'failed')
     }
 
-    if (this.hodlerAddress != undefined) {
-      this.subscribeToHodler().catch((error) =>
-        this.logger.error('Failed subscribing to hodler events:', error)
-      )
-    } else {
-      this.logger.warn(
-        'Missing HODLER_CONTRACT_ADDRESS, ' +
-          'not subscribing to Hodler Locking EVM events'
-      )
+    if (this.useHodler == 'true') {
+      if (this.hodlerAddress != undefined) {
+        this.subscribeToHodler().catch((error) =>
+          this.logger.error('Failed subscribing to hodler events:', error)
+        )
+      } else {
+        this.logger.warn(
+          'Missing HODLER_CONTRACT_ADDRESS, ' +
+            'not subscribing to Hodler Locking EVM events'
+        )
+      }
     }
 
-    if (this.registratorAddress != undefined) {
-      this.subscribeToRegistrator().catch((error) =>
-        this.logger.error('Failed subscribing to registrator events:', error)
-      )
-    } else {
-      this.logger.warn(
-        'Missing REGISTRATOR_CONTRACT_ADDRESS, ' +
-          'not subscribing to Registrator EVM events'
-      )
+    if (this.useRegistrator == 'true') {
+      if (this.registratorAddress != undefined) {
+        this.subscribeToRegistrator().catch((error) =>
+          this.logger.error('Failed subscribing to registrator events:', error)
+        )
+      } else {
+        this.logger.warn(
+          'Missing REGISTRATOR_CONTRACT_ADDRESS, ' +
+            'not subscribing to Registrator EVM events'
+        )
+      }
     }
   }
 
@@ -197,7 +215,8 @@ export class EventsService
     hodler: AddressLike,
     fingerprint: string | Promise<string>,
     amount: ethers.BigNumberish,
-    event: ethers.EventLog
+    event: ethers.EventLog,
+    operator: AddressLike,
   ) {
     let hodlerString: string
     if (hodler instanceof Promise) {
@@ -206,6 +225,14 @@ export class EventsService
       hodlerString = await hodler.getAddress()
     } else {
       hodlerString = hodler
+    }
+    let operatorString: string
+    if (operator instanceof Promise) {
+      operatorString = await operator
+    } else if (ethers.isAddressable(operator)) {
+      operatorString = await operator.getAddress()
+    } else {
+      operatorString = operator
     }
 
     let fingerprintString: string
@@ -221,14 +248,15 @@ export class EventsService
       transactionHash = tx.hash
     }
 
-    if (hodlerString != undefined) {
+    if (hodlerString != undefined && operatorString != undefined) {
       this.logger.log(
         `Noticed hodler lock for ${hodlerString} ` +
           `with fingerprint ${fingerprintString} ` +
+          `operator ${operatorString} ` +
           `and tx ${transactionHash}`
       )
       await this.enqueueAddRegistrationCredit(
-        hodlerString,
+        operatorString,
         transactionHash,
         fingerprintString
       )

@@ -91,6 +91,7 @@ job "registrator-controller-live" {
         REGISTRATOR_CONTRACT_DEPLOYED_BLOCK="6789472"
         CU_URL="https://cu.anyone.permaweb.services"
         USE_HODLER="false"
+        USE_REGISTRATOR="true"
       }
       
       resources {

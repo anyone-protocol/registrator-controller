@@ -92,6 +92,7 @@ job "registrator-controller-stage" {
         REGISTRATOR_CONTRACT_DEPLOYED_BLOCK="6204399"
         HODLER_CONTRACT_DEPLOYED_BLOCK="7879442"
         CU_URL="https://cu.anyone.permaweb.services"
+        USE_REGISTRATOR="false"
         USE_HODLER="true"
       }
       

@@ -32,8 +32,10 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
   private isLive?: string
   private doClean?: string
   private doDbNuke?: string
-  private registratorAddress?: string
   private provider: ethers.WebSocketProvider
+
+  private useRegistrator?: string
+  private registratorAddress?: string
   private registratorContract: ethers.Contract
   private registratorContractDeployedBlock: ethers.BlockTag
 
@@ -55,6 +57,7 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
       HODLER_CONTRACT_ADDRESS: string
       HODLER_CONTRACT_DEPLOYED_BLOCK: string
       USE_HODLER: string
+      USE_REGISTRATOR: string
       IS_LIVE: string
       DO_CLEAN: string
       DO_DB_NUKE: string
@@ -84,22 +87,29 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
       { infer: true }
     )
 
-    this.registratorAddress = this.config.get<string>(
-      'REGISTRATOR_CONTRACT_ADDRESS',
+    this.useRegistrator = this.config.get<string>(
+      'USE_REGISTRATOR',
       { infer: true }
     )
-    if (!this.registratorAddress) {
-      throw new Error('REGISTRATOR_CONTRACT_ADDRESS is not set!')
-    }
 
-    const registratorContractDeployedBlock = Number.parseInt(
-      this.config.get<string>('REGISTRATOR_CONTRACT_DEPLOYED_BLOCK', {
-        infer: true
-      })
-    )
-    this.registratorContractDeployedBlock = registratorContractDeployedBlock
-    if (Number.isNaN(registratorContractDeployedBlock)) {
-      throw new Error('REGISTRATOR_CONTRACT_DEPLOYED_BLOCK is NaN!')
+    if (this.useRegistrator == 'true') {
+      this.registratorAddress = this.config.get<string>(
+        'REGISTRATOR_CONTRACT_ADDRESS',
+        { infer: true }
+      )
+      if (!this.registratorAddress) {
+        throw new Error('REGISTRATOR_CONTRACT_ADDRESS is not set!')
+      }
+
+      const registratorContractDeployedBlock = Number.parseInt(
+        this.config.get<string>('REGISTRATOR_CONTRACT_DEPLOYED_BLOCK', {
+          infer: true
+        })
+      )
+      this.registratorContractDeployedBlock = registratorContractDeployedBlock
+      if (Number.isNaN(registratorContractDeployedBlock)) {
+        throw new Error('REGISTRATOR_CONTRACT_DEPLOYED_BLOCK is NaN!')
+      }
     }
 
     if (this.useHodler == 'true') {
@@ -146,11 +156,13 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
         }
       }).bind(this)
     )
-    this.registratorContract = new ethers.Contract(
-      this.registratorAddress,
-      registratorABI,
-      this.provider
-    )
+    if (this.useRegistrator == 'true') {
+      this.registratorContract = new ethers.Contract(
+        this.registratorAddress,
+        registratorABI,
+        this.provider
+      )
+    }
     if (this.useHodler == 'true') {
       this.hodlerContract = new ethers.Contract(
         this.hodlerAddress,
@@ -196,7 +208,9 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
     if (this.state.isDiscovering) {
       this.logger.log('Discovering registrator events should already be queued')
     } else {
-      await this.enqueueDiscoverRegistratorEventsFlow(0)
+      if (this.useRegistrator == 'true') {
+        await this.enqueueDiscoverRegistratorEventsFlow(0)
+      }
       if (this.useHodler == 'true') {
         await this.enqueueDiscoverHodlerEventsFlow(0)
       }
@@ -236,7 +250,7 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
             blockNumber: evt.blockNumber,
             blockHash: evt.blockHash,
             transactionHash: evt.transactionHash,
-            address: evt.args[0],
+            address: evt.args[3],
             fingerprint: evt.args[1]
           })
           newEvents++
