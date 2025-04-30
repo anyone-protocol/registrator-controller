@@ -130,7 +130,7 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
 
   async onApplicationBootstrap() {
     this.provider = await this.evmProviderService.getCurrentWebSocketProvider(
-      (provider) => {
+      (provider => {
         this.provider = provider
         this.registratorContract = new ethers.Contract(
           this.registratorAddress,
@@ -144,7 +144,7 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
             this.provider
           )
         }
-      }
+      }).bind(this)
     )
     this.registratorContract = new ethers.Contract(
       this.registratorAddress,

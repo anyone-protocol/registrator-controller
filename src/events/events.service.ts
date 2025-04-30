@@ -104,10 +104,10 @@ export class EventsService
 
   async onApplicationBootstrap(): Promise<void> {
     this.provider = await this.evmProviderService.getCurrentWebSocketProvider(
-      async (provider) => {
+      (async provider => {
         this.provider = provider
         await this.subscribeToRegistrator()
-      }
+      }).bind(this)
     )
 
     if (this.doClean != 'true') {
