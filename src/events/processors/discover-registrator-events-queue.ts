@@ -45,19 +45,18 @@ export class DiscoverRegistratorEventsQueue extends WorkerHost {
           await this.eventsDiscoveryService.matchDiscoveredRegistratorEvents(
             job.data.currentBlock
           )
-
-          // NB: Re-enqueue this flow
-          await this.eventsDiscoveryService.enqueueDiscoverRegistratorEventsFlow()
-
-          return
         } catch (error) {
           this.logger.error(
             `Exception during job ${job.name} [${job.id}]`,
             error.stack
           )
+        } finally {
+          // NB: Re-enqueue this flow
+          await this.eventsDiscoveryService
+            .enqueueDiscoverRegistratorEventsFlow()
         }
 
-        return undefined
+        return
 
       default:
         this.logger.warn(`Found unknown job ${job.name} [${job.id}]`)
