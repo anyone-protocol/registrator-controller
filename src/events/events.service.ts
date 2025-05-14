@@ -106,8 +106,8 @@ export class EventsService
     }
 
     this.logger.log(
-      `Initializing events service (IS_LIVE: ${this.isLive}, ` +
-        `REGISTRATOR: ${this.registratorAddress})`
+      `Initializing events service (IS_LIVE: ${this.isLive}, USE_HODLER: ${this.useHodler}, USE_REGISTRATOR: ${this.useRegistrator} ` +
+        `REGISTRATOR: ${this.registratorAddress} HODLER: ${this.hodlerAddress})`
     )
   }
 
@@ -136,7 +136,7 @@ export class EventsService
 
     if (this.useHodler == 'true') {
       if (this.hodlerAddress != undefined) {
-        this.subscribeToHodler().catch((error) =>
+        await this.subscribeToHodler().catch((error) =>
           this.logger.error('Failed subscribing to hodler events:', error)
         )
       } else {
@@ -149,7 +149,7 @@ export class EventsService
 
     if (this.useRegistrator == 'true') {
       if (this.registratorAddress != undefined) {
-        this.subscribeToRegistrator().catch((error) =>
+        await this.subscribeToRegistrator().catch((error) =>
           this.logger.error('Failed subscribing to registrator events:', error)
         )
       } else {

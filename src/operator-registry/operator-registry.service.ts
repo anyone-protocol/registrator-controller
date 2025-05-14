@@ -50,7 +50,7 @@ export class OperatorRegistryService implements OnApplicationBootstrap {
     )
     const wallet = new Wallet(this.operatorRegistryControllerKey)
     const address = await wallet.getAddress()
-    this.logger.log(`Bootstrapped with signer address ${address}`)
+    this.logger.log(`Bootstrapped Operator Registry ${this.operatorRegistryProcessId} with signer address ${address}`)
   }
 
   public async getOperatorRegistryState(): Promise<OperatorRegistryState> {
