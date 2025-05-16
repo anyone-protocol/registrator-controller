@@ -67,5 +67,5 @@ jobs:
 
           curl -L https://releases.hashicorp.com/nomad/1.8.3/nomad_1.8.3_linux_amd64.zip -o nomad.zip
           unzip nomad.zip
-          ./nomad job run redis.hcl
+          # ./nomad job run redis.hcl # Skip redis deploy until new pacing is on all controllers
           ./nomad job run runtime-job.hcl
