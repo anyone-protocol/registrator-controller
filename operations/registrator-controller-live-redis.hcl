@@ -1,6 +1,7 @@
 job "registrator-controller-live-redis" {
   datacenters = ["ator-fin"]
   type = "service"
+  namespace = "live-protocol"
 
   constraint {
     attribute = "${node.unique.id}"

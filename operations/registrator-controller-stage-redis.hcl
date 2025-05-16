@@ -1,5 +1,9 @@
 job "registrator-controller-stage-redis" {
-    group "registrator-controller-stage-redis-group" {
+  datacenters = ["ator-fin"]
+  type = "service"
+  namespace = "stage-protocol"
+
+  group "registrator-controller-stage-redis-group" {
     count = 1
 
     network {

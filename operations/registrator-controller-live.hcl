@@ -1,6 +1,7 @@
 job "registrator-controller-live" {
   datacenters = ["ator-fin"]
   type = "service"
+  namespace = "live-protocol"
 
   constraint {
     attribute = "${node.unique.id}"
@@ -37,11 +38,30 @@ job "registrator-controller-live" {
       }
 
       vault {
-        policies = [
-          "valid-ator-live",
-          "registrator-controller-service-keys",
-          "jsonrpc-live-registrator-controller-eth"
-        ]
+        role = "any1-nomad-workloads-controller"
+      }
+
+      identity {
+        name = "vault_default"
+        aud  = ["any1-infra"]
+        ttl  = "1h"
+      }
+
+      template {
+        data = <<-EOH
+        {{ $allocIndex := env "NOMAD_ALLOC_INDEX" }}
+
+        {{ with secret "kv/live-protocol/registrator-controller-live"}}
+          REGISTRATOR_OPERATOR_KEY="{{ .Data.data.REGISTRATOR_OPERATOR_KEY_DEPRECATED }}"
+          EVM_NETWORK="{{ .Data.data.EVM_NETWORK }}"
+          OPERATOR_REGISTRY_CONTROLLER_KEY="{{ index .Data.data (print `OPERATOR_REGISTRY_CONTROLLER_` $allocIndex `_key`) }}"
+          EVM_PRIMARY_WSS="wss://sepolia.infura.io/ws/v3/{{ index .Data.data (print `INFURA_SEPOLIA_API_KEY_` $allocIndex) }}"
+          EVM_JSON_RPC="https://sepolia.infura.io/v3/{{ index .Data.data (print `INFURA_SEPOLIA_API_KEY_` $allocIndex) }}"
+          EVM_SECONDARY_WSS="wss://eth-sepolia.g.alchemy.com/v2/{{ index .Data.data (print `INFURA_SEPOLIA_API_KEY_` $allocIndex) }}"
+        {{ end }}
+        EOH
+        destination = "secrets/keys.env"
+        env         = true
       }
 
       template {
@@ -57,28 +77,8 @@ job "registrator-controller-live" {
           REDIS_HOSTNAME="{{ .Address }}"
           REDIS_PORT="{{ .Port }}"
         {{- end }}
-
-        {{ $workerPrefix := "worker_" }}
-        {{ $apiKeyPrefix := "api_key_" }}
-        {{ $allocIndex := env "NOMAD_ALLOC_INDEX" }}
-        {{ $workerSuffix := "_key" }}
-
-        {{ with secret "kv/valid-ator/live" }}
-          REGISTRATOR_OPERATOR_KEY="{{ .Data.data.REGISTRATOR_OPERATOR_KEY }}"
-          EVM_NETWORK="{{ .Data.data.INFURA_NETWORK }}"
-        {{ end }}
-        {{ with secret "kv/controller-service-keys/registrator-controller" }}
-          OPERATOR_REGISTRY_CONTROLLER_KEY="{{ index .Data.data (print $workerPrefix $allocIndex $workerSuffix) }}"
-        {{ end }}
-        {{ with secret "kv/jsonrpc/live/registrator-controller/infura/eth" }}
-          EVM_PRIMARY_WSS="wss://sepolia.infura.io/ws/v3/{{ index .Data.data (print $apiKeyPrefix $allocIndex) }}"
-          EVM_JSON_RPC="https://sepolia.infura.io/v3/{{ index .Data.data (print $apiKeyPrefix $allocIndex) }}"
-        {{ end }}
-        {{ with secret "kv/jsonrpc/live/registrator-controller/alchemy/eth" }}
-          EVM_SECONDARY_WSS="wss://eth-sepolia.g.alchemy.com/v2/{{ index .Data.data (print $apiKeyPrefix $allocIndex) }}"
-        {{ end }}
         EOH
-        destination = "secrets/file.env"
+        destination = "local/config.env"
         env         = true
       }
 
