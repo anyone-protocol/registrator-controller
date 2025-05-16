@@ -59,9 +59,13 @@ jobs:
         run: |
           curl -L https://releases.hashicorp.com/levant/0.3.2/levant_0.3.2_linux_amd64.zip -o levant.zip
           unzip levant.zip
+          
           [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -consul-address=$CONSUL_ADDR -out runtime-job.hcl operations/registrator-controller-stage.hcl
+           [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -consul-address=$CONSUL_ADDR -out runtime-job.hcl operations/registrator-controller-stage-redis.hcl
           [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -consul-address=$CONSUL_ADDR -out runtime-job.hcl operations/registrator-controller-live.hcl
+           [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -consul-address=$CONSUL_ADDR -out runtime-job.hcl operations/registrator-controller-live-redis.hcl
 
           curl -L https://releases.hashicorp.com/nomad/1.8.3/nomad_1.8.3_linux_amd64.zip -o nomad.zip
           unzip nomad.zip
+          ./nomad job run redis.hcl
           ./nomad job run runtime-job.hcl
