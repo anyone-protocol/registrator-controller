@@ -38,7 +38,7 @@ export class DiscoverRegistratorEventsQueue extends WorkerHost {
           )
         }
 
-        return undefined
+        return
 
       case DiscoverRegistratorEventsQueue.JOB_MATCH_REGISTERED_EVENTS:
         try {
