@@ -3,6 +3,11 @@ job "registrator-controller-stage" {
   type = "service"
   namespace = "stage-protocol"
 
+  constraint {
+    attribute = "${meta.pool}"
+    value = "stage"
+  }
+
   group "registrator-controller-stage-group" {
     count = 2
 
