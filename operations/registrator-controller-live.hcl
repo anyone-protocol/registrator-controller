@@ -25,9 +25,6 @@ job "registrator-controller-live" {
         to = 3000
         host_network = "wireguard"
       }
-      port "redis" {
-        host_network = "wireguard"
-      }
     }
 
     task "registrator-controller-live-service" {

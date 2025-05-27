@@ -18,6 +18,20 @@ job "registrator-controller-live-redis" {
       }
     }
 
+    service {
+      name = "registrator-controller-live-redis"
+      port = "redis"
+      tags = ["logging"]
+      check {
+        name     = "registrator controller live redis health check"
+        type     = "tcp"
+        interval = "5s"
+        timeout  = "10s"
+        address_mode = "alloc"
+      }
+    }
+
+
     task "registrator-controller-live-redis" {
       driver = "docker"
       config {
@@ -31,18 +45,6 @@ job "registrator-controller-live-redis" {
       resources {
         cpu    = 2048
         memory = 4096
-      }
-
-      service {
-        name = "registrator-controller-live-redis"
-        port = "redis"
-        tags = ["logging"]
-        check {
-          name     = "registrator controller live redis health check"
-          type     = "tcp"
-          interval = "5s"
-          timeout  = "10s"
-        }
       }
 
       template {
