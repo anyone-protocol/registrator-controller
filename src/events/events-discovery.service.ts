@@ -247,6 +247,7 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
       if (!knownEvent) {
         try {
           await this.registeredEventModel.create({
+            eventName: 'Locked',
             blockNumber: evt.blockNumber,
             blockHash: evt.blockHash,
             transactionHash: evt.transactionHash,
@@ -378,6 +379,7 @@ export class EventsDiscoveryService implements OnApplicationBootstrap {
       if (!knownEvent) {
         try {
           await this.registeredEventModel.create({
+            eventName: 'Registered',
             blockNumber: evt.blockNumber,
             blockHash: evt.blockHash,
             transactionHash: evt.transactionHash,
