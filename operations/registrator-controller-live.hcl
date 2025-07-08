@@ -4,8 +4,8 @@ job "registrator-controller-live" {
   namespace = "live-protocol"
 
   constraint {
-    attribute = "${node.unique.id}"
-    value = "89b957c9-560a-126e-1ae8-13277258fcf1" # anon-hel-arweave-1
+    attribute = "${meta.pool}"
+    value = "live-protocol"
   }
 
   group "registrator-controller-live-group" {
@@ -23,9 +23,6 @@ job "registrator-controller-live" {
       mode = "bridge"
       port "registrator-controller-port" {
         to = 3000
-        host_network = "wireguard"
-      }
-      port "redis" {
         host_network = "wireguard"
       }
     }

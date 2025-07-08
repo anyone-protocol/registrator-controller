@@ -4,8 +4,8 @@ job "registrator-controller-live-redis" {
   namespace = "live-protocol"
 
   constraint {
-    attribute = "${node.unique.id}"
-    value = "89b957c9-560a-126e-1ae8-13277258fcf1" # anon-hel-arweave-1
+    attribute = "${meta.pool}"
+    value = "live-protocol"
   }
 
   group "registrator-controller-live-redis-group" {
@@ -17,6 +17,20 @@ job "registrator-controller-live-redis" {
         host_network = "wireguard"
       }
     }
+
+    service {
+      name = "registrator-controller-live-redis"
+      port = "redis"
+      tags = ["logging"]
+      check {
+        name     = "registrator controller live redis health check"
+        type     = "tcp"
+        interval = "5s"
+        timeout  = "10s"
+        address_mode = "alloc"
+      }
+    }
+
 
     task "registrator-controller-live-redis" {
       driver = "docker"
@@ -31,18 +45,6 @@ job "registrator-controller-live-redis" {
       resources {
         cpu    = 2048
         memory = 4096
-      }
-
-      service {
-        name = "registrator-controller-live-redis"
-        port = "redis"
-        tags = ["logging"]
-        check {
-          name     = "registrator controller live redis health check"
-          type     = "tcp"
-          interval = "5s"
-          timeout  = "10s"
-        }
       }
 
       template {

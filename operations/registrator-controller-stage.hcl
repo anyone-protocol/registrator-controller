@@ -4,8 +4,8 @@ job "registrator-controller-stage" {
   namespace = "stage-protocol"
 
   constraint {
-    attribute = "${node.unique.id}"
-    value = "89b957c9-560a-126e-1ae8-13277258fcf1" # anon-hel-arweave-1
+    attribute = "${meta.pool}"
+    value = "stage"
   }
 
   group "registrator-controller-stage-group" {
@@ -23,9 +23,6 @@ job "registrator-controller-stage" {
       mode = "bridge"
       port "registrator-controller-port" {
         to = 3000
-        host_network = "wireguard"
-      }
-      port "redis" {
         host_network = "wireguard"
       }
     }
@@ -87,7 +84,7 @@ job "registrator-controller-stage" {
         IS_LIVE="true"
         VERSION="[[.commit_sha]]"
         CPU_COUNT="1"
-        DO_CLEAN="false"
+        DO_CLEAN="true"
         REGISTRATOR_CONTRACT_DEPLOYED_BLOCK="6204399"
         HODLER_CONTRACT_DEPLOYED_BLOCK="7879442"
         CU_URL="https://cu.anyone.permaweb.services"

@@ -215,8 +215,8 @@ export class EventsService
     hodler: AddressLike,
     fingerprint: string | Promise<string>,
     amount: ethers.BigNumberish,
-    event: ethers.EventLog,
     operator: AddressLike,
+    event: ethers.EventLog,
   ) {
     let hodlerString: string
     if (hodler instanceof Promise) {
