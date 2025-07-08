@@ -48,24 +48,24 @@ jobs:
           docker tag $IMAGE_NAME $IMAGE_ID:${GITHUB_SHA}
           docker push $IMAGE_ID:${GITHUB_SHA}
 
-      - name: Deploy new version
-        env:
-          NOMAD_CACERT: operations/admin-ui-ca.crt
-          NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN_REGISTRATOR_CONTROLLER_DEPLOY }}
-          NOMAD_ADDR: ${{ secrets.NOMAD_ADDR }}
-          CONSUL_CACERT: operations/admin-ui-ca.crt
-          CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN_REGISTRATOR_CONTROLLER_DEPLOY }}
-          CONSUL_ADDR: ${{ secrets.CONSUL_ADDR }}
-        run: |
-          curl -L https://releases.hashicorp.com/levant/0.3.2/levant_0.3.2_linux_amd64.zip -o levant.zip
-          unzip levant.zip
+      # - name: Deploy new version
+      #   env:
+      #     NOMAD_CACERT: operations/admin-ui-ca.crt
+      #     NOMAD_TOKEN: ${{ secrets.NOMAD_TOKEN_REGISTRATOR_CONTROLLER_DEPLOY }}
+      #     NOMAD_ADDR: ${{ secrets.NOMAD_ADDR }}
+      #     CONSUL_CACERT: operations/admin-ui-ca.crt
+      #     CONSUL_HTTP_TOKEN: ${{ secrets.CONSUL_HTTP_TOKEN_REGISTRATOR_CONTROLLER_DEPLOY }}
+      #     CONSUL_ADDR: ${{ secrets.CONSUL_ADDR }}
+      #   run: |
+      #     curl -L https://releases.hashicorp.com/levant/0.3.2/levant_0.3.2_linux_amd64.zip -o levant.zip
+      #     unzip levant.zip
           
-          [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -consul-address=$CONSUL_ADDR -out runtime-job.hcl operations/registrator-controller-stage.hcl
-           [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -consul-address=$CONSUL_ADDR -out redis.hcl operations/registrator-controller-stage-redis.hcl
-          [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -consul-address=$CONSUL_ADDR -out runtime-job.hcl operations/registrator-controller-live.hcl
-           [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -consul-address=$CONSUL_ADDR -out redis.hcl operations/registrator-controller-live-redis.hcl
+      #     [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -consul-address=$CONSUL_ADDR -out runtime-job.hcl operations/registrator-controller-stage.hcl
+      #     [[ -n $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -consul-address=$CONSUL_ADDR -out redis.hcl operations/registrator-controller-stage-redis.hcl
+      #     [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -consul-address=$CONSUL_ADDR -out runtime-job.hcl operations/registrator-controller-live.hcl
+      #     [[ -z $(grep "stage" deploy-vars.json) ]] && ./levant render -var-file="deploy-vars.json" -consul-address=$CONSUL_ADDR -out redis.hcl operations/registrator-controller-live-redis.hcl
 
-          curl -L https://releases.hashicorp.com/nomad/1.8.3/nomad_1.8.3_linux_amd64.zip -o nomad.zip
-          unzip nomad.zip
-          # ./nomad job run redis.hcl # Skip redis deploy until new pacing is on all controllers
-          ./nomad job run runtime-job.hcl
+      #     curl -L https://releases.hashicorp.com/nomad/1.8.3/nomad_1.8.3_linux_amd64.zip -o nomad.zip
+      #     unzip nomad.zip
+      #     # ./nomad job run redis.hcl # Skip redis deploy until new pacing is on all controllers
+      #     ./nomad job run runtime-job.hcl
