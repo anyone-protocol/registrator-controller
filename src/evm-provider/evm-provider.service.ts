@@ -79,19 +79,89 @@ export class EvmProviderService
   }
 
   async onApplicationBootstrap() {
-    const [primaryProvider] = await createResilientProviders(
-      [{ url: this.config.EVM_PRIMARY_WSS, name: 'primary (infura)' }],
-      this.config.EVM_NETWORK,
-      this.swapProviders.bind(this)
+    this.logger.log(`Bootstrapping EVM Provider Service...`)
+
+    this.logger.log(`Creating primary (infura) WebSocket provider...`)
+    const primaryProviderName = 'primary (infura)'
+    const primaryProviderUrl = this.config.EVM_PRIMARY_WSS
+    const primaryCreditsCheckSuccess = await this.checkProviderCredits(
+      primaryProviderName,
+      primaryProviderUrl
     )
-    this.primaryWebSocketProvider = primaryProvider
-    const [secondaryProvider] = await createResilientProviders(
-      [{ url: this.config.EVM_SECONDARY_WSS, name: 'secondary (alchemy)' }],
-      this.config.EVM_NETWORK,
-      this.swapProviders.bind(this)
+    if (primaryCreditsCheckSuccess) {
+      const [primaryProvider] = await createResilientProviders(
+        [{ url: primaryProviderUrl, name: primaryProviderName }],
+        this.config.EVM_NETWORK,
+        this.swapProviders.bind(this)
+      )
+      if (!primaryProvider) {
+        this.logger.error('Failed to create primary (infura) WebSocket provider')
+      }
+      this.primaryWebSocketProvider = primaryProvider
+    } else {
+      this.logger.error(
+        'Primary (infura) WebSocket provider credits check failed!'
+      )
+    }
+
+    this.logger.log(`Creating secondary (alchemy) WebSocket provider...`)
+    const secondaryProviderName = 'secondary (alchemy)'
+    const secondaryProviderUrl = this.config.EVM_SECONDARY_WSS
+    const secondaryCreditsCheckSuccess = await this.checkProviderCredits(
+      secondaryProviderName,
+      secondaryProviderUrl
     )
-    this.secondaryWebSocketProvider = secondaryProvider
-    this.currentWebSocketProvider = this.primaryWebSocketProvider
+    if (secondaryCreditsCheckSuccess) {
+      const [secondaryProvider] = await createResilientProviders(
+        [{ url: secondaryProviderUrl, name: secondaryProviderName }],
+        this.config.EVM_NETWORK,
+        this.swapProviders.bind(this)
+      )
+      if (!secondaryProvider) {
+        this.logger.error(
+          'Failed to create secondary (alchemy) WebSocket provider'
+        )
+      }
+      this.secondaryWebSocketProvider = secondaryProvider
+    } else {
+      this.logger.error(
+        'Secondary (alchemy) WebSocket provider credits check failed!'
+      )
+    }
+
+    if (this.primaryWebSocketProvider) {
+      this.logger.log(`Using primary (infura) WebSocket provider`)
+      this.currentWebSocketProvider = this.primaryWebSocketProvider
+    } else if (this.secondaryWebSocketProvider) {
+      this.logger.log(`Using secondary (alchemy) WebSocket provider`)
+      this.currentWebSocketProvider = this.secondaryWebSocketProvider
+    } else {
+      throw new Error('No WebSocket providers available! Cannot bootstrap!')
+    }
+    this.logger.log(`EVM Provider Service bootstrapped successfully!`)
+  }
+
+  private async checkProviderCredits(
+    providerName: string,
+    providerWssUrl: string
+  ) {
+    this.logger.log(`Checking credits for ${providerName} WebSocket provider`)
+    try {
+      const provider = new ethers.WebSocketProvider(providerWssUrl)
+      const blockNumber = await provider.getBlockNumber()
+      this.logger.log(
+        `Successfully connected to ${providerName} WebSocket provider. ` +
+          `Block number: ${blockNumber}`
+      )
+    } catch (error) {
+      this.logger.error(
+        `Failed to check credits for ${providerName} WebSocket provider:`,
+        error instanceof Error ? error.stack : error
+      )
+      return false
+    }
+
+    return true
   }
 
   private swapProviders() {
