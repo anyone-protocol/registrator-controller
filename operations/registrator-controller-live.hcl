@@ -61,11 +61,13 @@ job "registrator-controller-live" {
         env         = true
       }
 
+      consul {}
+
       template {
         data = <<-EOH
-        OPERATOR_REGISTRY_PROCESS_ID="[[ consulKey "smart-contracts/live/operator-registry-address" ]]"
-        REGISTRATOR_CONTRACT_ADDRESS="[[ consulKey "registrator/sepolia/live/address" ]]"
-        HODLER_CONTRACT_ADDRESS="[[ consulKey "hodler/sepolia/live/address" ]]"
+        OPERATOR_REGISTRY_PROCESS_ID="{{ key "smart-contracts/live/operator-registry-address" }}"
+        REGISTRATOR_CONTRACT_ADDRESS="{{ key "registrator/sepolia/live/address" }}"
+        HODLER_CONTRACT_ADDRESS="{{ key "hodler/sepolia/live/address" }}"
 
         {{- range service "validator-live-mongo" }}
           MONGO_URI="mongodb://{{ .Address }}:{{ .Port }}/registrator-controller-live"
